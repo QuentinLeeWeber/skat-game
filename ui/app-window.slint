@@ -1,0 +1,87 @@
+enum CardSuit { clubs, diamonds, hearts, spade }
+enum CardNum { Seven, Eigth, Nine, Ten, Ass, Jack, Queen, King }
+
+struct Card {
+    num: CardNum,
+    suit: CardSuit,
+}
+
+component CardDisplay inherits Rectangle {
+    callback mouse_moved(h: bool);
+    in property <Card> card; 
+    in property <image> icon;
+
+    ta := TouchArea {}
+
+    Rectangle {
+        y: ta.has-hover ? -10px : 0px;
+        animate y { duration: 50ms; }
+        Rectangle {
+            x: -5px;
+            y: -5px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        Rectangle {
+            width: parent.width;
+            Image {
+                x: 0px;
+                y: 0px;
+                source: icon;
+                width: parent.width;
+            }
+            border-radius: 10px;
+            clip: true;
+        }
+    }
+}
+
+export component MainWindow inherits Window {
+    property <[image]> card_images: [
+        @image-url("images/hearts_Seven.png"),
+        @image-url("images/diamonds_Eigth.png"),
+    ];
+
+    Rectangle {
+        height: parent.height;
+        width: parent.width;
+        background: @radial-gradient(circle, #007400 0%, #004400 100%);
+    }
+
+    Rectangle {
+        height: 100px;
+        width: 100px;
+        x: 0;
+        y: 0;
+        background: rgb(255, 0, 0);
+        transform-rotation: 45deg;
+        transform-origin: {x: self.width / 2, y: self.height / 2};
+    }
+
+    in-out property<[Card]> hand: [
+        { num: CardNum.Seven, suit: CardSuit.hearts },
+        { num: CardNum.Eigth, suit: CardSuit.diamonds },
+        { num: CardNum.Eigth, suit: CardSuit.diamonds },
+        { num: CardNum.Eigth, suit: CardSuit.diamonds },
+        { num: CardNum.Eigth, suit: CardSuit.diamonds },
+        { num: CardNum.Eigth, suit: CardSuit.diamonds },
+        { num: CardNum.Eigth, suit: CardSuit.diamonds },
+        { num: CardNum.Eigth, suit: CardSuit.diamonds },
+        { num: CardNum.Eigth, suit: CardSuit.diamonds },
+        { num: CardNum.Eigth, suit: CardSuit.diamonds },
+    ];
+
+    for card[i] in hand : CardDisplay {
+        height: 1000px;
+        width: parent.width / 3;
+
+        x: parent.width / 2 - self.width / 2;
+        y: parent.height / 2; 
+        
+        transform-rotation: (i - 5) * 0.5deg * parent.width / 100px;
+        transform-origin: {x: self.width / 2, y: parent.height * 1.5};
+
+        icon: @image-url("images/Spade7.png");
+    } 
+}
