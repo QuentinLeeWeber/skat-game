@@ -1,5 +1,5 @@
-enum CardSuit { clubs, diamonds, hearts, spade }
-enum CardRank { Seven, Eight, Nine, Ten, Ace, Jack, Queen, King }
+enum CardSuit { clubs, diamond, heart, spade }
+enum CardRank { Seven, Eight, Nine, Ten, Jack, Queen, King, Ace }
 
 struct Card {
     rank: CardRank,
@@ -8,6 +8,10 @@ struct Card {
 
 component CardDisplay inherits Rectangle {
     callback play_card(card: Card);
+    callback set_position;
+    callback start_pressed;
+
+    in-out property <bool> press;
     in property <Card> card; 
     in property <image> icon;
 
@@ -16,9 +20,14 @@ component CardDisplay inherits Rectangle {
             play_card(card);
         }
         moved => {
-
+            set_position();
+        }
+        changed pressed => {
+            start_pressed();
         }
     }
+
+    press: ta.pressed;
 
     Rectangle {
         y: ta.has-hover ? -10px : 0px;
@@ -46,12 +55,70 @@ component CardDisplay inherits Rectangle {
 
 export component MainWindow inherits Window {
     callback play_card(card: Card);
+    callback set_position(from: int, to: int);
+    
     in-out property<[Card]> hand;
 
+    //this is a bit cursed, but slint does not support non static strings as image source
     property <[image]> card_images: [
-        @image-url("images/hearts_Seven.png"),
-        @image-url("images/diamonds_Eigth.png"),
+        @image-url("textures/clubs_seven.png"),
+        @image-url("textures/clubs_eigth.png"),
+        @image-url("textures/clubs_nine.png"),
+        @image-url("textures/clubs_ten.png"),
+        @image-url("textures/clubs_jack.png"),
+        @image-url("textures/clubs_queen.png"),
+        @image-url("textures/clubs_king.png"),
+        @image-url("textures/clubs_ace.png"),
+
+        @image-url("textures/diamond_seven.png"),
+        @image-url("textures/diamond_eigth.png"),
+        @image-url("textures/diamond_nine.png"),
+        @image-url("textures/diamond_ten.png"),
+        @image-url("textures/diamond_jack.png"),
+        @image-url("textures/diamond_queen.png"),
+        @image-url("textures/diamond_king.png"),
+        @image-url("textures/diamond_ace.png"),
+
+        @image-url("textures/hearth_seven.png"),
+        @image-url("textures/hearth_eigth.png"),
+        @image-url("textures/hearth_nine.png"),
+        @image-url("textures/hearth_ten.png"),
+        @image-url("textures/hearth_jack.png"),
+        @image-url("textures/hearth_queen.png"),
+        @image-url("textures/hearth_king.png"),
+        @image-url("textures/hearth_ace.png"),
+
+        @image-url("textures/spade_seven.png"),
+        @image-url("textures/spade_eigth.png"),
+        @image-url("textures/spade_nine.png"),
+        @image-url("textures/spade_ten.png"),
+        @image-url("textures/spade_jack.png"),
+        @image-url("textures/spade_queen.png"),
+        @image-url("textures/spade_king.png"),
+        @image-url("textures/spade_ace.png"),
     ];
+    
+    pure function card_to_image(card: Card) -> image {
+        return card_images[suit_to_int(card.suit) * 8 + rank_to_int(card.rank) - 1];
+    }
+
+    pure function suit_to_int(suit: CardSuit) -> int {
+        if suit == CardSuit.clubs { return 0; }
+        else if suit == CardSuit.diamond { return 1; }
+        else if suit == CardSuit.heart { return 2; }
+        else { return 3; }
+    }
+
+    pure function rank_to_int(rank: CardRank) -> int {
+        if rank == CardRank.Seven { return 1; }
+        else if rank == CardRank.Eight { return 2; }
+        else if rank == CardRank.Nine { return 3; }
+        else if rank == CardRank.Ten { return 4; }
+        else if rank == CardRank.Jack { return 5; }
+        else if rank == CardRank.Queen { return 6; }
+        else if rank == CardRank.King { return 7; }
+        else { return 8; }
+    } 
 
     Rectangle {
         background: @radial-gradient(circle, #007400 0%, #004400 100%);
@@ -67,20 +134,29 @@ export component MainWindow inherits Window {
         transform-origin: {x: self.width / 2, y: self.height / 2};
     }
 
+    property <length> mouseX;
+    property <length> mouseY;
+
+    ta := TouchArea {}
+    mouseX: ta.mouse-x;
+    mouseY: ta.mouse-y;
+
     for card[i] in hand : CardDisplay {
         height: 1000px;
         width: parent.width / 3;
 
+        //x: self.press ? mouseX : parent.width / 2 - self.width / 2;
+        //y: self.press ? mouseY : parent.height / 2; 
+
         x: parent.width / 2 - self.width / 2;
         y: parent.height / 2; 
         
-        transform-rotation: (i - (hand.length / 2)) * 0.5deg * parent.width / 100px;
-        transform-origin: {x: self.width / 2, y: parent.height * 1.5};
+        transform-rotation: (i - (hand.length / 2) + 1) * 0.5deg * parent.width / 100px;
+        transform-origin: { x: self.width / 2, y: parent.height * 1.5 };
 
-        icon: @image-url("images/Spade7.png");
+        icon: card_to_image(card);
 
-        play_card => {
-            play_card(card);
-        }
+        play_card => { play_card(card); }
+        set_position => { set_position(i, 0)}
     } 
 }
