@@ -5,10 +5,26 @@ pub enum Message {
     ConfirmJoin(u32),
     PlayerJoin(PlayerJoinMessage),
     DrawCard(Card),
+    Hear,
     Say,
+    SayFurther,
     Bid(i32),
+    StopBidding,
+    NewBid(i32),
+    PlayCard(Card),
+    PlayNormalSolo,
+    PlayNormalDuo,
+    YourTurn,
+    Trump(Suit),
+    GameWon(GameWonMessage),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GameWonMessage {
+    pub id: Option<u32>,
+    pub winner_points: u32,
+    pub loser_points: u32,
+}
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PlayerJoinMessage {
     pub id: u32,
@@ -39,4 +55,32 @@ pub enum Rank {
     Queen,
     King,
     Ace,
+}
+
+impl Rank {
+    pub fn value(&self) -> u32 {
+        match self {
+            Rank::Seven => 0,
+            Rank::Eight => 0,
+            Rank::Nine => 0,
+            Rank::Jack => 2,
+            Rank::Queen => 3,
+            Rank::King => 4,
+            Rank::Ten => 10,
+            Rank::Ace => 11,
+        }
+    }
+}
+
+pub fn normal_rank_value(rank: &Rank) -> u32 {
+    match rank {
+        Rank::Seven => 0,
+        Rank::Eight => 1,
+        Rank::Nine => 2,
+        Rank::Queen => 3,
+        Rank::King => 4,
+        Rank::Ten => 5,
+        Rank::Ace => 6,
+        Rank::Jack => 6969,
+    }
 }

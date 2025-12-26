@@ -1,4 +1,4 @@
-use anyhow::{Ok, Result};
+use anyhow::{Error, Ok, Result};
 use postcard::{from_bytes, to_stdvec};
 use proto::*;
 use rand::seq::SliceRandom;
@@ -29,20 +29,35 @@ impl Player {
         }
     }
 
-    async fn send_message(&mut self, msg: Message) -> Result<(), anyhow::Error> {
+    async fn send_message(&mut self, msg: Message) -> Result<(), Error> {
         let serialized = to_stdvec(&msg).unwrap();
         self.tcp_stream.get_mut().write_all(&serialized).await?;
         Ok(())
     }
+
+    async fn read_message(&mut self) -> Result<Message, Error> {
+        let mut buf = String::new();
+        let _ = self.tcp_stream.read_line(&mut buf).await?;
+        let msg: Message = from_bytes(&buf.as_bytes()).unwrap();
+        Ok(msg)
+    }
 }
 
-trait EvilGet<T> {
+trait VecExt<T> {
     fn evil_get(&mut self, index: usize) -> &mut T;
+    async fn broadcast_message(&mut self, msg: Message) -> Result<(), Error>;
 }
 
-impl EvilGet<Player> for Vec<Player> {
-    fn evil_get(&mut self, index: usize) -> &mut Player {
-        self.get_mut(index).unwrap()
+impl VecExt<Player> for Vec<Player> {
+    fn evil_get(&mut self, id: usize) -> &mut Player {
+        self.iter_mut().find(|p| p.id == id as u32).unwrap()
+    }
+
+    async fn broadcast_message(&mut self, msg: Message) -> Result<(), Error> {
+        for player in &mut self.iter_mut() {
+            player.send_message(msg.clone()).await?;
+        }
+        Ok(())
     }
 }
 
@@ -140,7 +155,171 @@ async fn play_game(mut players: Vec<Player>) -> Result<(), anyhow::Error> {
         sleep(Duration::from_millis(300)).await
     }
 
-    players.evil_get(2).send_message(Message::Say).await?;
+    players.evil_get(0).send_message(Message::Hear).await?;
+    players.evil_get(1).send_message(Message::Say).await?;
+    players
+        .evil_get(2)
+        .send_message(Message::SayFurther)
+        .await?;
+
+    match bid(&mut players).await? {
+        Some(i) => {
+            normal_game(players, i, cards).await?;
+        }
+        None => {
+            loosing_hand(players).await?;
+        }
+    }
 
     Ok(())
+}
+
+fn turn_order(start: usize) -> impl Iterator<Item = usize> {
+    (0..3).map(move |i| (i + start) % 3)
+}
+
+async fn normal_game(
+    mut players: Vec<Player>,
+    solo: usize,
+    mut skat: Vec<Card>,
+) -> Result<(), Error> {
+    //Broadcast Played Game
+    for i in 0..3 {
+        let p = players.evil_get(i);
+        if i == solo {
+            p.send_message(Message::PlayNormalSolo).await?;
+        } else {
+            p.send_message(Message::PlayNormalDuo).await?;
+        }
+    }
+
+    let mut solo_trick = vec![];
+    let mut duo_trick = vec![];
+
+    //Skat
+    for _ in 0..2 {
+        let msg = Message::DrawCard(skat.pop().unwrap());
+        players.evil_get(solo).send_message(msg).await?
+    }
+
+    for _ in 0..2 {
+        if let Message::PlayCard(card) = players.evil_get(solo).read_message().await? {
+            solo_trick.push(card);
+        }
+    }
+
+    //Get trump
+    let trump = {
+        if let Message::Trump(suit) = players.evil_get(solo).read_message().await? {
+            suit
+        } else {
+            panic!("scary!");
+        }
+    };
+
+    players
+        .broadcast_message(Message::Trump(trump.clone()))
+        .await?;
+
+    let mut last_winner = 0;
+
+    //PLay 10 rounds
+    for _ in 0..10 {
+        let mut current_trick = vec![];
+
+        for current_player in turn_order(last_winner) {
+            players
+                .evil_get(current_player)
+                .send_message(Message::YourTurn)
+                .await?;
+
+            if let Message::PlayCard(card) = players.evil_get(current_player).read_message().await?
+            {
+                current_trick.push((card, current_player));
+            }
+        }
+
+        let trick_color = if current_trick
+            .iter()
+            .any(|c| &c.0.suit == &trump || c.0.rank == Rank::Jack)
+        {
+            trump.clone()
+        } else {
+            current_trick.get(0).unwrap().0.suit.clone()
+        };
+
+        last_winner = current_trick
+            .iter()
+            .filter(|c| c.0.suit == trick_color || c.0.rank == Rank::Jack)
+            .max_by_key(|c| normal_rank_value(&c.0.rank))
+            .map(|c| c.1)
+            .unwrap();
+
+        if last_winner == solo {
+            &mut solo_trick
+        } else {
+            &mut duo_trick
+        }
+        .append(&mut current_trick.into_iter().map(|c| c.0).collect());
+    }
+
+    //Evaluate Winner
+    let solo_points = evaluate_cards_value(&solo_trick);
+    let duo_points = evaluate_cards_value(&duo_trick);
+    let won_msg = if solo_points > duo_points {
+        Message::GameWon(GameWonMessage {
+            id: Some(solo as u32),
+            winner_points: solo_points,
+            loser_points: duo_points,
+        })
+    } else if solo_points < duo_points {
+        Message::GameWon(GameWonMessage {
+            id: Some(solo as u32 + 1),
+            winner_points: duo_points,
+            loser_points: solo_points,
+        })
+    } else {
+        Message::GameWon(GameWonMessage {
+            id: None,
+            winner_points: 60,
+            loser_points: 60,
+        })
+    };
+    players.broadcast_message(won_msg).await?;
+
+    Ok(())
+}
+
+fn evaluate_cards_value(cards: &Vec<Card>) -> u32 {
+    cards.iter().map(|c| c.rank.value()).sum()
+}
+
+fn evaluate_round_winner(first: Card, second: Card, third: Card) {
+    todo!()
+}
+
+async fn loosing_hand(players: Vec<Player>) -> Result<(), Error> {
+    todo!()
+}
+
+async fn bid(players: &mut Vec<Player>) -> Result<Option<usize>, Error> {
+    let mut bid;
+    let mut highest_bider = None;
+    for i in [1, 2, 0] {
+        loop {
+            match players.evil_get(i).read_message().await? {
+                Message::Bid(val) => {
+                    bid = val;
+                    highest_bider = Some(i);
+                    players.broadcast_message(Message::NewBid(bid)).await?;
+                }
+                Message::StopBidding => {
+                    break;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    Ok(highest_bider)
 }
