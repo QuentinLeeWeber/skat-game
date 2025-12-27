@@ -1,7 +1,9 @@
-use anyhow::{Error, Ok, Result};
+use anyhow::{Error, Result};
+use macros::message_types;
 use postcard::{from_bytes, to_stdvec};
 use proto::*;
 use rand::seq::SliceRandom;
+use std::result::Result::Ok;
 use std::sync::Arc;
 use std::{mem, vec};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -40,6 +42,20 @@ impl Player {
         let _ = self.tcp_stream.read_line(&mut buf).await?;
         let msg: Message = from_bytes(&buf.as_bytes()).unwrap();
         Ok(msg)
+    }
+
+    #[message_types(Trump(Suit), PlayCard(Card), Bid(i32))]
+    async fn expect_message(&mut self) -> Message {
+        let message = loop {
+            let message = self.read_message().await;
+            match message {
+                Ok(m) => break m,
+                Err(e) => {
+                    eprint!("{}", e);
+                }
+            }
+        };
+        message
     }
 }
 
@@ -203,20 +219,12 @@ async fn normal_game(
     }
 
     for _ in 0..2 {
-        if let Message::PlayCard(card) = players.evil_get(solo).read_message().await? {
-            solo_trick.push(card);
-        }
+        let card = players.evil_get(solo).expect_message_play_card().await;
+        solo_trick.push(card);
     }
 
     //Get trump
-    let trump = {
-        if let Message::Trump(suit) = players.evil_get(solo).read_message().await? {
-            suit
-        } else {
-            panic!("scary!");
-        }
-    };
-
+    let trump = players.evil_get(solo).expect_message_trump().await;
     players
         .broadcast_message(Message::Trump(trump.clone()))
         .await?;
@@ -233,10 +241,11 @@ async fn normal_game(
                 .send_message(Message::YourTurn)
                 .await?;
 
-            if let Message::PlayCard(card) = players.evil_get(current_player).read_message().await?
-            {
-                current_trick.push((card, current_player));
-            }
+            let card = players
+                .evil_get(current_player)
+                .expect_message_play_card()
+                .await;
+            current_trick.push((card, current_player));
         }
 
         let trick_color = if current_trick
@@ -307,16 +316,13 @@ async fn bid(players: &mut Vec<Player>) -> Result<Option<usize>, Error> {
     let mut highest_bider = None;
     for i in [1, 2, 0] {
         loop {
-            match players.evil_get(i).read_message().await? {
-                Message::Bid(val) => {
-                    bid = val;
-                    highest_bider = Some(i);
-                    players.broadcast_message(Message::NewBid(bid)).await?;
-                }
-                Message::StopBidding => {
-                    break;
-                }
-                _ => {}
+            let val = players.evil_get(i).expect_message_bid().await;
+            if val == 0 {
+                break;
+            } else {
+                bid = val;
+                highest_bider = Some(i);
+                players.broadcast_message(Message::NewBid(bid)).await?;
             }
         }
     }

@@ -9,7 +9,6 @@ pub enum Message {
     Say,
     SayFurther,
     Bid(i32),
-    StopBidding,
     NewBid(i32),
     PlayCard(Card),
     PlayNormalSolo,
