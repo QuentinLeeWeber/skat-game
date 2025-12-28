@@ -5,11 +5,14 @@ use proto::*;
 use rand::seq::SliceRandom;
 use std::result::Result::Ok;
 use std::sync::Arc;
-use std::{mem, vec};
+use std::{env, mem, vec};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
 use tokio::time::{Duration, sleep};
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug)]
 struct Player {
@@ -24,6 +27,7 @@ impl Player {
 
         let mut name = String::new();
         let _ = tcp_stream.read_line(&mut name).await.unwrap();
+        name.pop();
         Player {
             id: id as u32,
             name,
@@ -34,6 +38,7 @@ impl Player {
     async fn send_message(&mut self, msg: Message) -> Result<(), Error> {
         let serialized = to_stdvec(&msg).unwrap();
         self.tcp_stream.get_mut().write_all(&serialized).await?;
+        self.tcp_stream.get_mut().write_all("\n".as_bytes()).await?;
         Ok(())
     }
 
@@ -77,19 +82,27 @@ impl VecExt<Player> for Vec<Player> {
     }
 }
 
-type SharedPlayers = Arc<Mutex<Vec<Player>>>;
-
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     println!("starting server...");
+    let port = match env::var("SERVER_PORT") {
+        Ok(val) => {
+            println!("server port is: {val:?}");
+            val
+        }
+        Err(_) => {
+            println!("SERVER_PORT unset, using default port 6969");
+            String::from("6969")
+        }
+    };
 
-    let listener = TcpListener::bind("127.0.0.1:6969").await?;
+    let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
     loop {
         let players = Arc::new(Mutex::new(vec![]));
         let mut threads = vec![];
 
-        for i in 0..2 {
-            let mut players = Arc::clone(&players);
+        for i in 0..3 {
+            let players = Arc::clone(&players);
             let (stream, addr) = listener.accept().await?;
 
             println!("client with ip: {}, joined!", addr);
@@ -112,11 +125,11 @@ async fn main() -> Result<(), anyhow::Error> {
                     })
                     .collect::<Vec<_>>();
 
-                mem::drop(players_lock);
-
                 for msg in msgs {
-                    broadcast_message_shared(&mut players, msg).await.unwrap();
+                    players_lock.broadcast_message(msg).await.unwrap();
                 }
+
+                mem::drop(players_lock);
             }));
         }
 
@@ -128,18 +141,6 @@ async fn main() -> Result<(), anyhow::Error> {
         let players = mutex.into_inner();
         tokio::spawn(async move { play_game(players).await });
     }
-}
-
-async fn broadcast_message_shared(
-    players: &mut SharedPlayers,
-    msg: Message,
-) -> Result<(), anyhow::Error> {
-    let serialized = to_stdvec(&msg).unwrap();
-    let mut players = players.lock().await;
-    for player in &mut players.iter_mut() {
-        player.tcp_stream.write_all(&serialized).await?;
-    }
-    Ok(())
 }
 
 fn new_shuffled_deck() -> Vec<Card> {
@@ -164,11 +165,12 @@ async fn play_game(mut players: Vec<Player>) -> Result<(), anyhow::Error> {
     for _ in 0..10 {
         let card = cards.pop().unwrap();
         for player in &mut players {
-            let msg = Message::DrawCard(card.clone());
+            /*let msg = Message::DrawCard(card.clone());
             let serialized = to_stdvec(&msg).unwrap();
-            player.tcp_stream.write_all(&serialized).await?;
+            player.tcp_stream.write_all(&serialized).await?;*/
+            player.send_message(Message::DrawCard(card.clone())).await?;
         }
-        sleep(Duration::from_millis(300)).await
+        sleep(Duration::from_millis(100)).await
     }
 
     players.evil_get(0).send_message(Message::Hear).await?;
