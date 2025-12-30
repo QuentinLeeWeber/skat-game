@@ -30,7 +30,9 @@ async fn default_game_1() {
     });
 
     let mut stream_1 = connect("127.0.0.1:1234".to_string()).await;
-    stream_1.send_name("Markus Rühl".into()).await;
+    stream_1
+        .send_message(Message::Login("Markus Rühl".into()))
+        .await;
     assert_eq!(Message::ConfirmJoin(0), stream_1.read_message().await);
     assert_eq!(
         Message::PlayerJoin(PlayerJoinMessage {
@@ -43,9 +45,11 @@ async fn default_game_1() {
     let mut stream_2 = connect("127.0.0.1:1234".to_string()).await;
     sleep(Duration::from_millis(50)).await;
     let mut stream_3 = connect("127.0.0.1:1234".to_string()).await;
-    stream_2.send_name("Elon".into()).await;
+    stream_2.send_message(Message::Login("Elon".into())).await;
     sleep(Duration::from_millis(50)).await;
-    stream_3.send_name("Mr. Beast".into()).await;
+    stream_3
+        .send_message(Message::Login("Mr. Beast".into()))
+        .await;
     assert_eq!(Message::ConfirmJoin(1), stream_2.read_message().await);
     assert_eq!(Message::ConfirmJoin(2), stream_3.read_message().await);
     assert_eq!(
@@ -108,7 +112,6 @@ async fn connect(ip: String) -> BufReader<TcpStream> {
 trait BufReaderExt {
     async fn send_message(&mut self, msg: Message);
     async fn read_message(&mut self) -> Message;
-    async fn send_name(&mut self, name: String);
 }
 
 impl BufReaderExt for BufReader<TcpStream> {
@@ -123,10 +126,5 @@ impl BufReaderExt for BufReader<TcpStream> {
         let _ = self.read_line(&mut buf).await.unwrap();
         let msg: Message = from_bytes(&buf.as_bytes()).unwrap();
         msg
-    }
-
-    async fn send_name(&mut self, mut name: String) {
-        name.push_str("\n");
-        self.write(&name.as_bytes()).await.unwrap();
     }
 }

@@ -19,37 +19,45 @@ struct Player {
     id: u32,
     name: String,
     tcp_stream: BufReader<TcpStream>,
+    ip_addr: String,
 }
 
 impl Player {
-    async fn new(tcp_stream: TcpStream, id: u32) -> Self {
-        let mut tcp_stream = BufReader::new(tcp_stream);
+    async fn new(tcp_stream: TcpStream, id: u32, ip_addr: String) -> Self {
+        let tcp_stream = BufReader::new(tcp_stream);
 
-        let mut name = String::new();
-        let _ = tcp_stream.read_line(&mut name).await.unwrap();
-        name.pop();
-        Player {
+        let mut new_player = Player {
             id: id as u32,
-            name,
+            name: String::from(""),
             tcp_stream,
-        }
+            ip_addr: ip_addr,
+        };
+
+        let name = new_player.expect_message_login().await;
+        println!(
+            "player with IP adress: {}, logged in as: \"{}\"",
+            new_player.ip_addr, name
+        );
+        new_player.name = name;
+        new_player
     }
 
     async fn send_message(&mut self, msg: Message) -> Result<(), Error> {
-        let serialized = to_stdvec(&msg).unwrap();
+        let mut serialized = to_stdvec(&msg).unwrap();
+        serialized.push(b'\n');
         self.tcp_stream.get_mut().write_all(&serialized).await?;
-        self.tcp_stream.get_mut().write_all("\n".as_bytes()).await?;
         Ok(())
     }
 
     async fn read_message(&mut self) -> Result<Message, Error> {
         let mut buf = String::new();
         let _ = self.tcp_stream.read_line(&mut buf).await?;
-        let msg: Message = from_bytes(&buf.as_bytes()).unwrap();
+        let msg: Message = from_bytes(&buf.as_bytes())
+            .unwrap_or_else(|e| panic!("unreachable deserialize should always work: {}", e));
         Ok(msg)
     }
 
-    #[message_types(Trump(Suit), PlayCard(Card), Bid(i32))]
+    #[message_types(Login(String), Trump(Suit), PlayCard(Card), Bid(i32))]
     async fn expect_message(&mut self) -> Message {
         let message = loop {
             let message = self.read_message().await;
@@ -108,7 +116,7 @@ async fn main() -> Result<(), anyhow::Error> {
             println!("client with ip: {}, joined!", addr);
 
             threads.push(tokio::spawn(async move {
-                let mut new_player = Player::new(stream, i).await;
+                let mut new_player = Player::new(stream, i, addr.to_string()).await;
                 let msg = Message::ConfirmJoin(i);
                 new_player.send_message(msg).await.unwrap();
 
