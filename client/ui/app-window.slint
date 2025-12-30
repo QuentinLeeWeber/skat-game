@@ -1,3 +1,5 @@
+import { VerticalBox, Button, Palette } from "std-widgets.slint";
+
 enum CardSuit { clubs, diamond, heart, spade }
 enum CardRank { Seven, Eight, Nine, Ten, Jack, Queen, King, Ace }
 
@@ -56,8 +58,11 @@ component CardDisplay inherits Rectangle {
 export component MainWindow inherits Window {
     callback play_card(card: Card);
     callback set_position(from: int, to: int);
+    callback submit_name(name: string);
     
     in-out property<[Card]> hand;
+    in property <bool> has-name;
+    in property <string> name;
 
     //this is a bit cursed, but slint does not support non static strings as image source
     property <[image]> card_images: [
@@ -159,4 +164,50 @@ export component MainWindow inherits Window {
         play_card => { play_card(card); }
         set_position => { set_position(i, 0)}
     } 
+
+    property <string> input_text: "";
+
+    if (!has-name) : Rectangle {
+        width: 70%;
+        height: 40%;
+        border-radius: 10px;
+        border-color: rgb(200, 200, 200);
+        background: Palette.background;
+        drop-shadow-blur:  5px;
+        drop-shadow-color: rgba(0, 0, 0, 0.2);
+        drop-shadow-offset-x: 5px;
+        drop-shadow-offset-y: 5px;
+
+        VerticalBox {
+            x: parent.width * 10%;
+            y: parent.height * 20%;
+            width: 80%;
+            height: 40px;
+
+            input := TextInput { 
+               color: Palette.control-foreground;
+                edited => {
+                    root.input_text = self.text;
+                }
+                   
+            }
+        }
+
+        Text {
+            x: parent.width * 10% + 7px;
+            y: parent.height * 20% + 9px;
+            text: "enter name";
+            color: rgb(150, 150, 150);
+            visible: root.input_text == "";
+        }
+
+        Button {
+            x: parent.width * 10%;
+            y: parent.height * 60%;
+            width: 80%;
+            height: 20%;
+            text: "OK";
+            clicked => root.submit_name(input.text);
+        }
+    }
 }

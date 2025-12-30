@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Message {
+    Login(String),
     ConfirmJoin(u32),
     PlayerJoin(PlayerJoinMessage),
     DrawCard(Card),

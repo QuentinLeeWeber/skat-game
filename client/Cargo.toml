@@ -7,6 +7,7 @@ edition = "2021"
 slint = "1.14.1"
 tokio = { version = "1.48.0", features = [ "full" ] }
 proto = { path = "../proto/" }
+postcard = { version = "1.1.3", features = [ "use-std" ] }
 
 [build-dependencies]
 slint-build = "1.14.1"
