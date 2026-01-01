@@ -40,10 +40,6 @@ impl AppModel {
         }
     }
 
-    fn has_name(&self) -> bool {
-        !matches!(self.state, AppState::Login)
-    }
-
     fn submit_name(&mut self, name: String) {
         if !name.trim().is_empty() {
             self.state = AppState::Ready;
@@ -96,7 +92,7 @@ async fn main() -> Result<(), slint::PlatformError> {
             let mut app_model = app_model.lock().unwrap();
             app_model.submit_name(name.to_string());
             if let Some(ui) = ui_weak.upgrade() {
-                ui.set_has_name(app_model.has_name());
+                ui.set_has_name(app_model.name.is_some());
 
                 let name = app_model.name.clone().unwrap_or("".into());
                 let _ = sock_tx.send(Message::Login(name.clone()));
