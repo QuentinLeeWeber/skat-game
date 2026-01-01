@@ -26,12 +26,7 @@ struct AppModel {
 }
 
 impl AppModel {
-    fn new(ui: &Weak<MainWindow>) -> Self {
-        let hand = Rc::new(VecModel::from(Vec::<CardSlint>::new()));
-        if let Some(ui) = ui.upgrade() {
-            ui.set_hand(ModelRc::from(Rc::clone(&hand)));
-        }
-
+    fn new() -> Self {
         Self {
             player_id: 0,
             state: AppState::Login,
@@ -53,8 +48,9 @@ async fn main() -> Result<(), slint::PlatformError> {
     let ui = MainWindow::new()?;
     let ui_weak = ui.as_weak();
 
-    let app_model = Arc::new(Mutex::new(AppModel::new(&ui_weak)));
+    let app_model = Arc::new(Mutex::new(AppModel::new()));
     let hand_model = Rc::new(VecModel::from(Vec::<CardSlint>::new()));
+    ui.set_hand(ModelRc::from(Rc::clone(&hand_model)));
 
     let (sock_tx, sock_rx) = mpsc::channel::<Message>();
 
