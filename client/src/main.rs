@@ -1,44 +1,42 @@
-use postcard::{from_bytes, to_stdvec};
 use proto::*;
 use slint::{Model, ModelRc, VecModel, Weak};
-use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::mpsc;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::TcpStream;
+use std::sync::{mpsc, Arc, Mutex};
 
 slint::include_modules!();
 
-const IP_ADDR: &str = "127.0.0.1:6969";
+mod networking;
 
 #[derive(Clone, Debug)]
 enum AppState {
     Login,
-    Ready { name: String },
+    Ready,
+}
+
+struct Player {
+    id: u32,
+    name: String,
 }
 
 struct AppModel {
-    state: AppState,
-    hand: Rc<VecModel<Card>>,
+    pub player_id: u32,
+    pub state: AppState,
+    pub other_player: Vec<Player>,
+    name: Option<String>,
 }
 
 impl AppModel {
     fn new(ui: &Weak<MainWindow>) -> Self {
-        let hand = Rc::new(VecModel::from(Vec::<Card>::new()));
+        let hand = Rc::new(VecModel::from(Vec::<CardSlint>::new()));
         if let Some(ui) = ui.upgrade() {
             ui.set_hand(ModelRc::from(Rc::clone(&hand)));
         }
 
         Self {
+            player_id: 0,
             state: AppState::Login,
-            hand,
-        }
-    }
-
-    fn name(&self) -> Option<&str> {
-        match &self.state {
-            AppState::Ready { name } => Some(name),
-            _ => None,
+            other_player: Vec::new(),
+            name: None,
         }
     }
 
@@ -48,7 +46,8 @@ impl AppModel {
 
     fn submit_name(&mut self, name: String) {
         if !name.trim().is_empty() {
-            self.state = AppState::Ready { name };
+            self.state = AppState::Ready;
+            self.name = Some(name);
         }
     }
 }
@@ -58,63 +57,48 @@ async fn main() -> Result<(), slint::PlatformError> {
     let ui = MainWindow::new()?;
     let ui_weak = ui.as_weak();
 
-    let app_model = Rc::new(RefCell::new(AppModel::new(&ui_weak)));
+    let app_model = Arc::new(Mutex::new(AppModel::new(&ui_weak)));
+    let hand_model = Rc::new(VecModel::from(Vec::<CardSlint>::new()));
 
     let (sock_tx, sock_rx) = mpsc::channel::<Message>();
 
-    match TcpStream::connect(IP_ADDR).await {
-        Ok(tcp_stream) => {
-            let (reader, mut writer) = tokio::net::TcpStream::into_split(tcp_stream);
-            let reader = BufReader::new(reader);
-
-            tokio::spawn(async move {
-                while let Ok(msg) = sock_rx.recv() {
-                    println!("sending Messeage: {:?}", msg);
-                    let mut msg = to_stdvec(&msg).unwrap();
-                    msg.push(b'\n');
-                    writer.write_all(&msg).await.unwrap();
-                }
-            });
-        }
-        Err(e) => println!("could not connect to server: {}", e),
-    };
+    networking::connect_to_server(Arc::clone(&app_model), sock_rx, ui_weak.clone());
 
     ui.on_play_card({
-        let app_model = Rc::clone(&app_model);
+        let hand_model = Rc::clone(&hand_model);
 
         move |card| {
             println!("Playing card: {:?}", card);
-            let index = app_model.borrow().hand.iter().position(|c| c == card);
+            let index = hand_model.iter().position(|c| c == card);
             if let Some(i) = index {
-                app_model.borrow_mut().hand.remove(i);
+                hand_model.remove(i);
             }
         }
     });
 
     ui.on_set_position({
-        let app_model = Rc::clone(&app_model);
+        let hand_model = Rc::clone(&hand_model);
 
         move |from, to| {
             println!("Moving card from {} to {}", from, to);
-            let card = app_model.borrow_mut().hand.remove(from as usize);
-            app_model.borrow_mut().hand.insert(to as usize, card);
+            let card = hand_model.remove(from as usize);
+            hand_model.insert(to as usize, card);
         }
     });
 
     ui.on_submit_name({
-        println!("submut name");
-        let app_model = Rc::clone(&app_model);
+        let app_model = Arc::clone(&app_model);
 
         move |name| {
             if name == "" {
                 return;
             }
-            app_model.borrow_mut().submit_name(name.to_string());
+            let mut app_model = app_model.lock().unwrap();
+            app_model.submit_name(name.to_string());
             if let Some(ui) = ui_weak.upgrade() {
-                let m = app_model.borrow();
-                ui.set_has_name(m.has_name());
+                ui.set_has_name(app_model.has_name());
 
-                let name = m.name().unwrap_or("").to_string();
+                let name = app_model.name.clone().unwrap_or("".into());
                 let _ = sock_tx.send(Message::Login(name.clone()));
                 ui.set_name(name.into());
             }
@@ -131,21 +115,21 @@ async fn main() -> Result<(), slint::PlatformError> {
 
 async fn main_loop(ui: Weak<MainWindow>) -> Result<(), slint::PlatformError> {
     let cards_to_add = vec![
-        Card {
-            suit: CardSuit::Heart,
-            rank: CardRank::Seven,
+        CardSlint {
+            suit: CardSuitSlint::Heart,
+            rank: CardRankSlint::Seven,
         },
-        Card {
-            suit: CardSuit::Diamond,
-            rank: CardRank::Eight,
+        CardSlint {
+            suit: CardSuitSlint::Diamond,
+            rank: CardRankSlint::Eight,
         },
-        Card {
-            suit: CardSuit::Clubs,
-            rank: CardRank::Nine,
+        CardSlint {
+            suit: CardSuitSlint::Clubs,
+            rank: CardRankSlint::Nine,
         },
-        Card {
-            suit: CardSuit::Spade,
-            rank: CardRank::Ace,
+        CardSlint {
+            suit: CardSuitSlint::Spade,
+            rank: CardRankSlint::Ace,
         },
     ];
 
@@ -156,7 +140,7 @@ async fn main_loop(ui: Weak<MainWindow>) -> Result<(), slint::PlatformError> {
                 let hand_model = ui.get_hand();
                 let vec_model = hand_model
                     .as_any()
-                    .downcast_ref::<VecModel<Card>>()
+                    .downcast_ref::<VecModel<CardSlint>>()
                     .unwrap();
 
                 vec_model.push(card);
@@ -166,4 +150,39 @@ async fn main_loop(ui: Weak<MainWindow>) -> Result<(), slint::PlatformError> {
     }
 
     Ok(())
+}
+
+impl From<Card> for CardSlint {
+    fn from(card: Card) -> Self {
+        Self {
+            suit: card.suit.into(),
+            rank: card.rank.into(),
+        }
+    }
+}
+
+impl From<Suit> for CardSuitSlint {
+    fn from(suit: Suit) -> Self {
+        match suit {
+            Suit::Clubs => CardSuitSlint::Clubs,
+            Suit::Diamonds => CardSuitSlint::Diamond,
+            Suit::Spades => CardSuitSlint::Spade,
+            Suit::Hearts => CardSuitSlint::Heart,
+        }
+    }
+}
+
+impl From<Rank> for CardRankSlint {
+    fn from(rank: Rank) -> Self {
+        match rank {
+            Rank::Ace => CardRankSlint::Ace,
+            Rank::Eight => CardRankSlint::Eight,
+            Rank::Jack => CardRankSlint::Jack,
+            Rank::King => CardRankSlint::King,
+            Rank::Nine => CardRankSlint::Nine,
+            Rank::Queen => CardRankSlint::Queen,
+            Rank::Seven => CardRankSlint::Seven,
+            Rank::Ten => CardRankSlint::Ten,
+        }
+    }
 }

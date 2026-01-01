@@ -1,20 +1,20 @@
 import { VerticalBox, Button, Palette } from "std-widgets.slint";
 
-enum CardSuit { clubs, diamond, heart, spade }
-enum CardRank { Seven, Eight, Nine, Ten, Jack, Queen, King, Ace }
+enum CardSuitSlint { clubs, diamond, heart, spade }
+enum CardRankSlint { Seven, Eight, Nine, Ten, Jack, Queen, King, Ace }
 
-struct Card {
-    rank: CardRank,
-    suit: CardSuit,
+struct CardSlint {
+    rank: CardRankSlint,
+    suit: CardSuitSlint,
 }
 
 component CardDisplay inherits Rectangle {
-    callback play_card(card: Card);
+    callback play_card(card: CardSlint);
     callback set_position;
     callback start_pressed;
 
     in-out property <bool> press;
-    in property <Card> card; 
+    in property <CardSlint> card; 
     in property <image> icon;
 
     ta := TouchArea {
@@ -56,11 +56,11 @@ component CardDisplay inherits Rectangle {
 }
 
 export component MainWindow inherits Window {
-    callback play_card(card: Card);
+    callback play_card(card: CardSlint);
     callback set_position(from: int, to: int);
     callback submit_name(name: string);
     
-    in-out property<[Card]> hand;
+    in-out property<[CardSlint]> hand;
     in property <bool> has-name;
     in property <string> name;
 
@@ -103,25 +103,25 @@ export component MainWindow inherits Window {
         @image-url("textures/spade_ace.png"),
     ];
     
-    pure function card_to_image(card: Card) -> image {
+    pure function card_to_image(card: CardSlint) -> image {
         return card_images[suit_to_int(card.suit) * 8 + rank_to_int(card.rank) - 1];
     }
 
-    pure function suit_to_int(suit: CardSuit) -> int {
-        if suit == CardSuit.clubs { return 0; }
-        else if suit == CardSuit.diamond { return 1; }
-        else if suit == CardSuit.heart { return 2; }
+    pure function suit_to_int(suit: CardSuitSlint) -> int {
+        if suit == CardSuitSlint.clubs { return 0; }
+        else if suit == CardSuitSlint.diamond { return 1; }
+        else if suit == CardSuitSlint.heart { return 2; }
         else { return 3; }
     }
 
-    pure function rank_to_int(rank: CardRank) -> int {
-        if rank == CardRank.Seven { return 1; }
-        else if rank == CardRank.Eight { return 2; }
-        else if rank == CardRank.Nine { return 3; }
-        else if rank == CardRank.Ten { return 4; }
-        else if rank == CardRank.Jack { return 5; }
-        else if rank == CardRank.Queen { return 6; }
-        else if rank == CardRank.King { return 7; }
+    pure function rank_to_int(rank: CardRankSlint) -> int {
+        if rank == CardRankSlint.Seven { return 1; }
+        else if rank == CardRankSlint.Eight { return 2; }
+        else if rank == CardRankSlint.Nine { return 3; }
+        else if rank == CardRankSlint.Ten { return 4; }
+        else if rank == CardRankSlint.Jack { return 5; }
+        else if rank == CardRankSlint.Queen { return 6; }
+        else if rank == CardRankSlint.King { return 7; }
         else { return 8; }
     } 
 
@@ -189,7 +189,6 @@ export component MainWindow inherits Window {
                 edited => {
                     root.input_text = self.text;
                 }
-                   
             }
         }
 
