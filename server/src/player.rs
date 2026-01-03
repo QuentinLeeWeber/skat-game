@@ -40,7 +40,7 @@ impl Drop for Player {
 }
 
 impl Player {
-    pub async fn new(
+    pub fn new(
         tcp_stream: TcpStream,
         id: u32,
         ip_addr: String,
@@ -53,7 +53,7 @@ impl Player {
         let (network_handle, keep_alive_handle) =
             Self::spawn_network_treads(id, tcp_reader, lobby_cmd_cnl.clone(), game_messages_tx);
 
-        let mut new_player = Player {
+        Player {
             id: id as u32,
             name: String::from(""),
             tcp_writer,
@@ -62,18 +62,10 @@ impl Player {
             network_handle,
             keep_alive_handle,
             lobby_cmd_cnl,
-        };
-
-        let name = new_player.expect_message_login().await;
-        println!(
-            "player with IP adress: {}, logged in as: \"{}\"",
-            new_player.ip_addr, name
-        );
-        new_player.name = name;
-        new_player
+        }
     }
 
-    #[message_types(Login(String), Trump(Suit), PlayCard(Card), Bid(i32))]
+    #[message_types(Trump(Suit), PlayCard(Card), Bid(i32))]
     async fn expect_message(&mut self) -> Message {
         self.read_message().await
     }
@@ -141,6 +133,15 @@ impl Player {
                         Some(Message::JoinGame) => {
                             lobby_cmd_cnl
                                 .send(LobbyCommand::JoinGame { player_id: id })
+                                .await
+                                .unwrap_or_else(|_| unreachable!());
+                        }
+                        Some(Message::Login(name)) => {
+                            lobby_cmd_cnl
+                                .send(LobbyCommand::Login {
+                                    player_id: id,
+                                    name,
+                                })
                                 .await
                                 .unwrap_or_else(|_| unreachable!());
                         }

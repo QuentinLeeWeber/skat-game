@@ -10,6 +10,7 @@ use tokio::time::{Duration, sleep};
 pub enum LobbyCommand {
     JoinGame { player_id: u32 },
     Disconnect { player_id: u32 },
+    Login { player_id: u32, name: String },
 }
 
 pub struct Lobby {
@@ -79,6 +80,18 @@ impl Lobby {
                             LobbyCommand::Disconnect { player_id } => {
                                 this_lobby.lock().await.remove_player(player_id).await;
                             }
+                            LobbyCommand::Login { player_id, name } => {
+                                println!(
+                                    "player with id: {}, logged in as: \"{}\"",
+                                    player_id, name
+                                );
+                                let mut lobby = this_lobby.lock().await;
+                                let player = lobby.players.iter_mut().find(|p| p.id == player_id);
+
+                                if let Some(player) = player {
+                                    player.name = name;
+                                }
+                            }
                         }
                     }
                     game_count += 1;
@@ -122,7 +135,7 @@ impl Lobby {
 
     pub async fn add_new_player(this: Arc<Mutex<Lobby>>, stream: TcpStream, addr: String, id: u32) {
         let cmd_channel = this.lock().await.cmd_channel.clone();
-        let mut new_player = Player::new(stream, id, addr.to_string(), cmd_channel).await;
+        let mut new_player = Player::new(stream, id, addr.to_string(), cmd_channel);
         let msg = Message::ConfirmJoin(id);
         new_player.send_message(msg).await;
 
