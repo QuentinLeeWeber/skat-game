@@ -1,8 +1,7 @@
 use proto::*;
 use slint::{Model, ModelRc, VecModel, Weak};
 use std::rc::Rc;
-use std::sync::{mpsc, Arc, Mutex};
-use std::thread::spawn;
+use std::sync::{Arc, Mutex};
 
 slint::include_modules!();
 

@@ -39,7 +39,7 @@ export component MainWindow inherits Window {
         clicked => root.join_game();
     }
 
-    if (app_state == AppState.PendingGame || app_state == AppState.Game) : PlayersDisplay {
+    if (app_state != AppState.Login) : PlayersDisplay {
         x: 0;
         y: 0;
         width: max(root.width * 30%, 200px);
