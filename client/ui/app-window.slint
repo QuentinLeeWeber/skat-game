@@ -1,59 +1,8 @@
 import { VerticalBox, Button, Palette } from "std-widgets.slint";
+import { CardsDisplay } from "cards-display.slint";
+import { CardSuitSlint, CardRankSlint, CardSlint } from "structs.slint";
 
-enum CardSuitSlint { clubs, diamond, heart, spade }
-enum CardRankSlint { Seven, Eight, Nine, Ten, Jack, Queen, King, Ace }
-
-struct CardSlint {
-    rank: CardRankSlint,
-    suit: CardSuitSlint,
-}
-
-component CardDisplay inherits Rectangle {
-    callback play_card(card: CardSlint);
-    callback set_position;
-    callback start_pressed;
-
-    in-out property <bool> press;
-    in property <CardSlint> card; 
-    in property <image> icon;
-
-    ta := TouchArea {
-        clicked => {
-            play_card(card);
-        }
-        moved => {
-            set_position();
-        }
-        changed pressed => {
-            start_pressed();
-        }
-    }
-
-    press: ta.pressed;
-
-    Rectangle {
-        y: ta.has-hover ? -10px : 0px;
-        animate y { duration: 50ms; }
-        Rectangle {
-            x: -5px;
-            y: -5px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-        }
-
-        Rectangle {
-            width: parent.width;
-            Image {
-                x: 0px;
-                y: 0px;
-                source: icon;
-                width: parent.width;
-            }
-            border-radius: 10px;
-            clip: true;
-        }
-    }
-}
+enum AppState { Login, Lobby, PendingGame, Game }
 
 export component MainWindow inherits Window {
     callback play_card(card: CardSlint);
@@ -61,69 +10,8 @@ export component MainWindow inherits Window {
     callback submit_name(name: string);
     
     in-out property<[CardSlint]> hand;
-    in property <bool> has-name;
     in property <string> name;
-
-    //this is a bit cursed, but slint does not support non static strings as image source
-    property <[image]> card_images: [
-        @image-url("textures/clubs_seven.png"),
-        @image-url("textures/clubs_eigth.png"),
-        @image-url("textures/clubs_nine.png"),
-        @image-url("textures/clubs_ten.png"),
-        @image-url("textures/clubs_jack.png"),
-        @image-url("textures/clubs_queen.png"),
-        @image-url("textures/clubs_king.png"),
-        @image-url("textures/clubs_ace.png"),
-
-        @image-url("textures/diamond_seven.png"),
-        @image-url("textures/diamond_eigth.png"),
-        @image-url("textures/diamond_nine.png"),
-        @image-url("textures/diamond_ten.png"),
-        @image-url("textures/diamond_jack.png"),
-        @image-url("textures/diamond_queen.png"),
-        @image-url("textures/diamond_king.png"),
-        @image-url("textures/diamond_ace.png"),
-
-        @image-url("textures/hearth_seven.png"),
-        @image-url("textures/hearth_eigth.png"),
-        @image-url("textures/hearth_nine.png"),
-        @image-url("textures/hearth_ten.png"),
-        @image-url("textures/hearth_jack.png"),
-        @image-url("textures/hearth_queen.png"),
-        @image-url("textures/hearth_king.png"),
-        @image-url("textures/hearth_ace.png"),
-
-        @image-url("textures/spade_seven.png"),
-        @image-url("textures/spade_eigth.png"),
-        @image-url("textures/spade_nine.png"),
-        @image-url("textures/spade_ten.png"),
-        @image-url("textures/spade_jack.png"),
-        @image-url("textures/spade_queen.png"),
-        @image-url("textures/spade_king.png"),
-        @image-url("textures/spade_ace.png"),
-    ];
-    
-    pure function card_to_image(card: CardSlint) -> image {
-        return card_images[suit_to_int(card.suit) * 8 + rank_to_int(card.rank) - 1];
-    }
-
-    pure function suit_to_int(suit: CardSuitSlint) -> int {
-        if suit == CardSuitSlint.clubs { return 0; }
-        else if suit == CardSuitSlint.diamond { return 1; }
-        else if suit == CardSuitSlint.heart { return 2; }
-        else { return 3; }
-    }
-
-    pure function rank_to_int(rank: CardRankSlint) -> int {
-        if rank == CardRankSlint.Seven { return 1; }
-        else if rank == CardRankSlint.Eight { return 2; }
-        else if rank == CardRankSlint.Nine { return 3; }
-        else if rank == CardRankSlint.Ten { return 4; }
-        else if rank == CardRankSlint.Jack { return 5; }
-        else if rank == CardRankSlint.Queen { return 6; }
-        else if rank == CardRankSlint.King { return 7; }
-        else { return 8; }
-    } 
+    in-out property<AppState> app_state;
 
     Rectangle {
         background: @radial-gradient(circle, #007400 0%, #004400 100%);
@@ -139,35 +27,15 @@ export component MainWindow inherits Window {
         transform-origin: {x: self.width / 2, y: self.height / 2};
     }
 
-    property <length> mouseX;
-    property <length> mouseY;
-
-    ta := TouchArea {}
-    mouseX: ta.mouse-x;
-    mouseY: ta.mouse-y;
-
-    for card[i] in hand : CardDisplay {
-        height: 1000px;
-        width: parent.width / 3;
-
-        //x: self.press ? mouseX : parent.width / 2 - self.width / 2;
-        //y: self.press ? mouseY : parent.height / 2; 
-
-        x: parent.width / 2 - self.width / 2;
-        y: parent.height / 2; 
-        
-        transform-rotation: (i - (hand.length / 2) + 1) * 0.5deg * parent.width / 100px;
-        transform-origin: { x: self.width / 2, y: parent.height * 1.5 };
-
-        icon: card_to_image(card);
-
-        play_card => { play_card(card); }
-        set_position => { set_position(i, 0)}
-    } 
+    CardsDisplay { 
+        hand: hand;
+        play_card(card) => root.play_card(card);
+        set_position(from, to) => root.set_position(from, to);
+    }
 
     property <string> input_text: "";
 
-    if (!has-name) : Rectangle {
+    if (app_state == AppState.Login) : Rectangle {
         width: 70%;
         height: 40%;
         border-radius: 10px;

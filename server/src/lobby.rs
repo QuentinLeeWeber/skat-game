@@ -2,7 +2,6 @@ use crate::game::{Game, PendingGame};
 use crate::player::Player;
 use proto::*;
 use std::sync::Arc;
-use tokio::io::Join;
 use tokio::net::TcpStream;
 use tokio::sync::{Mutex, mpsc};
 use tokio::task::JoinHandle;

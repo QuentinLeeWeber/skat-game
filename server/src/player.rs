@@ -163,7 +163,7 @@ impl Player {
                             .await
                             .unwrap_or_else(|_| unreachable!());
                     }
-                    sleep(Duration::from_millis(50)).await;
+                    sleep(Duration::from_millis(500)).await;
                 }
             }
         });

@@ -7,12 +7,6 @@ slint::include_modules!();
 
 mod networking;
 
-#[derive(Clone, Debug)]
-enum AppState {
-    Login,
-    Ready,
-}
-
 struct Player {
     id: u32,
     name: String,
@@ -37,8 +31,9 @@ impl AppModel {
 
     fn submit_name(&mut self, name: String) {
         if !name.trim().is_empty() {
-            self.state = AppState::Ready;
+            self.state = AppState::Lobby;
             self.name = Some(name);
+            self.state = AppState::Lobby;
         }
     }
 }
@@ -86,11 +81,10 @@ async fn main() -> Result<(), slint::PlatformError> {
             let mut app_model = app_model.lock().unwrap();
             app_model.submit_name(name.to_string());
             if let Some(ui) = ui_weak.upgrade() {
-                ui.set_has_name(app_model.name.is_some());
+                ui.set_name(name.clone().into());
+                ui.set_app_state(AppState::Lobby);
 
-                let name = app_model.name.clone().unwrap_or("".into());
-                let _ = sock_tx.send(Message::Login(name.clone()));
-                ui.set_name(name.into());
+                let _ = sock_tx.send(Message::Login(name.into()));
             }
         }
     });
