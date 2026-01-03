@@ -3,7 +3,7 @@ use proto::*;
 use std::{mem, vec};
 use tokio::task::JoinHandle;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct PendingGame {
     player_1: Option<Player>,
     player_2: Option<Player>,
@@ -13,6 +13,7 @@ pub struct PendingGame {
 
 impl PendingGame {
     pub async fn add_player(&mut self, player: Player) {
+        println!("player: {} joined Pending Game", player.name);
         match self.player_count {
             0 => {
                 self.player_1 = Some(player);
@@ -40,6 +41,7 @@ impl PendingGame {
         for msg in msgs {
             self.broadcast_message(msg).await;
         }
+        println!("pending game is now:\n{:#?}", self);
     }
 
     pub fn try_remove_player(&mut self, id: u32) {
@@ -68,6 +70,7 @@ impl PendingGame {
         if removed {
             self.player_count -= 1;
             println!("removed player with id: {} from pending game", id);
+            println!("pending game is now:\n{:#?}", self);
         }
     }
 

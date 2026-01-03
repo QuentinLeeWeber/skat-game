@@ -55,10 +55,18 @@ impl Lobby {
                     if let Some(cmd) = cmd_cnl_rx.recv().await {
                         match cmd {
                             LobbyCommand::JoinGame { player_id } => {
-                                let players = &mut this_lobby.lock().await.players;
-                                if let Some(pos) = players.iter().position(|p| p.id == player_id) {
+                                let player_pos = this_lobby
+                                    .lock()
+                                    .await
+                                    .players
+                                    .iter()
+                                    .position(|p| p.id == player_id)
+                                    .clone();
+
+                                if let Some(pos) = player_pos {
+                                    let player = this_lobby.lock().await.players.remove(pos);
                                     let pending_game = &mut this_lobby.lock().await.pending_game;
-                                    pending_game.add_player(players.remove(pos)).await;
+                                    pending_game.add_player(player).await;
                                     if pending_game.player_count == 3 {
                                         this_lobby
                                             .lock()

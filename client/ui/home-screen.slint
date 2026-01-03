@@ -1,0 +1,29 @@
+export { HomeScreen }
+
+
+import { Button } from "std-widgets.slint";
+
+component HomeScreen inherits Rectangle {
+    callback clicked;
+
+    VerticalLayout {
+        alignment: center;
+        width: parent.width * 40%;
+        height: parent.width * 10%;
+
+        HorizontalLayout {
+            alignment: center;
+            Text {
+                text: "Skat";
+                font-size: 60pt;
+                font-weight: 800;
+                color: rgb(255, 0, 0);
+            }
+        }
+        
+        Button {
+            text: "Join Game";
+            clicked => root.clicked();
+        }
+    }
+}

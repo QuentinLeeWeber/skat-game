@@ -1,4 +1,4 @@
-use crate::{CardSlint, MainWindow, Player};
+use crate::{AppState, CardSlint, MainWindow, Player};
 use proto::*;
 use slint::{Model, VecModel, Weak};
 use std::sync::mpsc;
@@ -102,6 +102,8 @@ fn spawn_reciever_thread(
             let msg: Message = serde_json::from_str(&buf)
                 .unwrap_or_else(|e| panic!("unreachable deserialize should always work: {}", e));
 
+            println!("recieved Message: {:?}", msg);
+
             match msg {
                 Message::ConfirmJoin(id) => {
                     app_model.lock().unwrap().player_id = id;
@@ -121,8 +123,17 @@ fn spawn_reciever_thread(
                 }
                 Message::PlayerJoin(new_player) => {
                     let mut app_model = app_model.lock().unwrap();
+
                     let is_me = app_model.player_id == new_player.id;
                     let is_other = app_model.other_player.iter().any(|p| p.id == new_player.id);
+
+                    if is_me && app_model.state == AppState::Lobby {
+                        app_model.state = AppState::PendingGame;
+                        let _ = slint::invoke_from_event_loop(move || {
+                            ui.unwrap().set_app_state(AppState::PendingGame);
+                        });
+                    }
+
                     if !is_me && !is_other {
                         app_model.other_player.push(Player {
                             name: new_player.name,

@@ -2,6 +2,7 @@ use proto::*;
 use slint::{Model, ModelRc, VecModel, Weak};
 use std::rc::Rc;
 use std::sync::{mpsc, Arc, Mutex};
+use std::thread::spawn;
 
 slint::include_modules!();
 
@@ -73,6 +74,7 @@ async fn main() -> Result<(), slint::PlatformError> {
 
     ui.on_submit_name({
         let app_model = Arc::clone(&app_model);
+        let sock_tx = sock_tx.clone();
 
         move |name| {
             if name == "" {
@@ -87,6 +89,10 @@ async fn main() -> Result<(), slint::PlatformError> {
                 let _ = sock_tx.send(Message::Login(name.into()));
             }
         }
+    });
+
+    ui.on_join_game(move || {
+        let _ = sock_tx.send(Message::JoinGame);
     });
 
     let weak_app = ui.as_weak();

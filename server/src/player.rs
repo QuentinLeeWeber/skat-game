@@ -1,6 +1,7 @@
 use crate::lobby::LobbyCommand;
 use macros::message_types;
 use proto::*;
+use std::fmt;
 use std::result::Result::Ok;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -10,7 +11,6 @@ use tokio::sync::{Mutex, mpsc};
 use tokio::task::JoinHandle;
 use tokio::time::{Duration, sleep};
 
-#[derive(Debug)]
 pub struct Player {
     pub id: u32,
     pub name: String,
@@ -20,6 +20,16 @@ pub struct Player {
     network_handle: JoinHandle<()>,
     keep_alive_handle: JoinHandle<()>,
     lobby_cmd_cnl: mpsc::Sender<LobbyCommand>,
+}
+
+impl fmt::Debug for Player {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Player")
+            .field("id", &self.id)
+            .field("name", &self.name)
+            .field("ip_addr", &self.ip_addr)
+            .finish()
+    }
 }
 
 impl Drop for Player {
