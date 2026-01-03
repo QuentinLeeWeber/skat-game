@@ -39,6 +39,7 @@ impl From<Player> for PlayerSlint {
     fn from(player: Player) -> Self {
         PlayerSlint {
             name: player.name.into(),
+            id: player.id as i32,
         }
     }
 }

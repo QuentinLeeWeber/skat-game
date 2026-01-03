@@ -44,7 +44,7 @@ impl PendingGame {
         println!("pending game is now:\n{:#?}", self);
     }
 
-    pub fn try_remove_player(&mut self, id: u32) {
+    pub async fn try_remove_player(&mut self, id: u32) {
         let mut removed = false;
         if let Some(player) = &self.player_1 {
             if player.id == id {
@@ -67,6 +67,7 @@ impl PendingGame {
                 removed = true;
             }
         }
+        self.broadcast_message(Message::PlayerLeave(id)).await;
         if removed {
             self.player_count -= 1;
             println!("removed player with id: {} from pending game", id);

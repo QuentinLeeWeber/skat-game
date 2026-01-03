@@ -155,6 +155,27 @@ fn spawn_reciever_thread(
                         });
                     }
                 }
+                Message::PlayerLeave(id) => {
+                    app_model
+                        .lock()
+                        .unwrap()
+                        .other_player
+                        .retain(|p| p.id != id);
+
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(ui) = ui.upgrade() {
+                            let players = ui.get_players();
+                            let vec_model = players
+                                .as_any()
+                                .downcast_ref::<VecModel<PlayerSlint>>()
+                                .unwrap();
+
+                            if let Some(index) = vec_model.iter().position(|p| p.id as u32 == id) {
+                                vec_model.remove(index);
+                            }
+                        }
+                    });
+                }
                 _ => {}
             }
             sleep(Duration::from_millis(1)).await;

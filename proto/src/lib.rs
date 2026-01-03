@@ -20,6 +20,7 @@ pub enum Message {
     KeepAlive(u128),
     BackToLobby,
     JoinGame,
+    PlayerLeave(u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

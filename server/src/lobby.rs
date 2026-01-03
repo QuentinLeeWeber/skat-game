@@ -90,7 +90,7 @@ impl Lobby {
 
     pub async fn remove_player(&mut self, id: u32) {
         //removing from pending game
-        self.pending_game.try_remove_player(id);
+        self.pending_game.try_remove_player(id).await;
 
         //removing from ongoing game (broadcasting closing off Game)
         let remove_game = self.games.iter().position(|g| g.has_player_by_id(id));
