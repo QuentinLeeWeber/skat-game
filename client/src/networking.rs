@@ -1,5 +1,4 @@
 use crate::{CardSlint, MainWindow, Player};
-use postcard::{from_bytes, to_stdvec};
 use proto::*;
 use slint::{Model, VecModel, Weak};
 use std::sync::mpsc;
@@ -13,24 +12,28 @@ const IP_ADDR: &str = "127.0.0.1:6969";
 
 pub fn connect_to_server(
     app_model: Arc<Mutex<crate::AppModel>>,
-    msg_channel: mpsc::Receiver<Message>,
     ui: Weak<MainWindow>,
-) {
-    let msg_channel = Arc::new(tokio::sync::Mutex::new(msg_channel));
+) -> mpsc::Sender<Message> {
+    let (sock_tx, sock_rx) = mpsc::channel::<Message>();
+    let sock_rx = Arc::new(Mutex::new(sock_rx));
 
+    let msg_sender = sock_tx.clone();
     tokio::spawn(async move {
         loop {
             let ui = ui.clone();
-            let msg_channel = Arc::clone(&msg_channel);
+            let msg_channel = Arc::clone(&sock_rx);
             let app_model = Arc::clone(&app_model);
+            let msg_sender = msg_sender.clone();
 
             match TcpStream::connect(IP_ADDR).await {
                 Ok(tcp_stream) => {
                     let (reader, writer) = tokio::net::TcpStream::into_split(tcp_stream);
                     let reader = BufReader::new(reader);
 
+                    let keep_alive_tread = spawn_keep_alive_thread(msg_sender);
                     let sender_thread = spawn_sender_thread(msg_channel, writer);
                     let reciever_thread = spawn_reciever_thread(app_model, ui, reader);
+                    keep_alive_tread.await.unwrap();
                     sender_thread.await.unwrap();
                     reciever_thread.await.unwrap();
                     println!("connection to server lost");
@@ -40,19 +43,39 @@ pub fn connect_to_server(
             sleep(Duration::from_secs(1)).await;
         }
     });
+    sock_tx
 }
 
-pub fn spawn_sender_thread(
-    msg_channel: Arc<tokio::sync::Mutex<mpsc::Receiver<Message>>>,
+fn spawn_keep_alive_thread(sender: mpsc::Sender<Message>) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        loop {
+            let sender = sender.clone();
+            tokio::task::spawn_blocking(move || {
+                let _ = sender.send(Message::KeepAlive(system_time()));
+            })
+            .await
+            .unwrap();
+            sleep(Duration::from_millis(1000)).await;
+        }
+    })
+}
+
+fn spawn_sender_thread(
+    msg_channel: Arc<Mutex<mpsc::Receiver<Message>>>,
     mut writer: OwnedWriteHalf,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         loop {
-            if let Ok(msg) = msg_channel.lock().await.recv() {
+            let msg_channel = Arc::clone(&msg_channel);
+            let msg = tokio::task::spawn_blocking(move || msg_channel.lock().unwrap().recv())
+                .await
+                .unwrap();
+
+            if let Ok(msg) = msg {
                 println!("sending Message: {:?}", msg);
-                let mut msg = to_stdvec(&msg).unwrap();
-                msg.push(b'\n');
-                match writer.write_all(&msg).await {
+                let mut msg = serde_json::to_string(&msg).unwrap();
+                msg.push('\n');
+                match writer.write_all(&msg.as_bytes()).await {
                     Err(_) => break,
                     _ => {}
                 }
@@ -76,8 +99,7 @@ fn spawn_reciever_thread(
                 Err(_) => break,
                 _ => {}
             };
-            println!("message:  {}", buf);
-            let msg: Message = from_bytes(&buf.as_bytes())
+            let msg: Message = serde_json::from_str(&buf)
                 .unwrap_or_else(|e| panic!("unreachable deserialize should always work: {}", e));
 
             match msg {

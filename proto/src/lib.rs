@@ -17,6 +17,9 @@ pub enum Message {
     YourTurn,
     Trump(Suit),
     GameWon(GameWonMessage),
+    KeepAlive(u128),
+    BackToLobby,
+    JoinGame,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -83,4 +86,12 @@ pub fn normal_rank_value(rank: &Rank) -> u32 {
         Rank::Ace => 6,
         Rank::Jack => 6969,
     }
+}
+
+pub fn system_time() -> u128 {
+    let system_time = std::time::SystemTime::now();
+    system_time
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
 }

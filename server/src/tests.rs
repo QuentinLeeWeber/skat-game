@@ -1,6 +1,7 @@
 use super::*;
 use std::env;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::TcpStream;
 use tokio::time::{Duration, sleep, timeout};
 
 const TIMEOUT_SECS: f64 = 3.0;
@@ -116,15 +117,15 @@ trait BufReaderExt {
 
 impl BufReaderExt for BufReader<TcpStream> {
     async fn send_message(&mut self, msg: Message) {
-        let serialized = to_stdvec(&msg).unwrap();
-        self.write_all(&serialized).await.unwrap();
+        let serialized = serde_json::to_string(&msg).unwrap();
+        self.write_all(&serialized.as_bytes()).await.unwrap();
         self.write_all("\n".as_bytes()).await.unwrap();
     }
 
     async fn read_message(&mut self) -> Message {
         let mut buf = String::new();
         let _ = self.read_line(&mut buf).await.unwrap();
-        let msg: Message = from_bytes(&buf.as_bytes()).unwrap();
+        let msg: Message = serde_json::from_str(&buf).unwrap();
         msg
     }
 }

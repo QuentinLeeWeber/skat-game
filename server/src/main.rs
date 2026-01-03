@@ -1,94 +1,18 @@
-use anyhow::{Error, Result};
-use macros::message_types;
-use postcard::{from_bytes, to_stdvec};
+use crate::lobby::Lobby;
+use anyhow::Result;
 use proto::*;
 use rand::seq::SliceRandom;
+use std::env;
 use std::result::Result::Ok;
-use std::sync::Arc;
-use std::{env, mem, vec};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::Mutex;
+use tokio::net::TcpListener;
 use tokio::time::{Duration, sleep};
 
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug)]
-struct Player {
-    id: u32,
-    name: String,
-    tcp_stream: BufReader<TcpStream>,
-    ip_addr: String,
-}
-
-impl Player {
-    async fn new(tcp_stream: TcpStream, id: u32, ip_addr: String) -> Self {
-        let tcp_stream = BufReader::new(tcp_stream);
-
-        let mut new_player = Player {
-            id: id as u32,
-            name: String::from(""),
-            tcp_stream,
-            ip_addr: ip_addr,
-        };
-
-        let name = new_player.expect_message_login().await;
-        println!(
-            "player with IP adress: {}, logged in as: \"{}\"",
-            new_player.ip_addr, name
-        );
-        new_player.name = name;
-        new_player
-    }
-
-    async fn send_message(&mut self, msg: Message) -> Result<(), Error> {
-        let mut serialized = to_stdvec(&msg).unwrap();
-        serialized.push(b'\n');
-        self.tcp_stream.get_mut().write_all(&serialized).await?;
-        Ok(())
-    }
-
-    async fn read_message(&mut self) -> Result<Message, Error> {
-        let mut buf = String::new();
-        let _ = self.tcp_stream.read_line(&mut buf).await?;
-        let msg: Message = from_bytes(&buf.as_bytes())
-            .unwrap_or_else(|e| panic!("unreachable deserialize should always work: {}", e));
-        Ok(msg)
-    }
-
-    #[message_types(Login(String), Trump(Suit), PlayCard(Card), Bid(i32))]
-    async fn expect_message(&mut self) -> Message {
-        let message = loop {
-            let message = self.read_message().await;
-            match message {
-                Ok(m) => break m,
-                Err(e) => {
-                    eprint!("{}", e);
-                }
-            }
-        };
-        message
-    }
-}
-
-trait VecExt<T> {
-    fn evil_get(&mut self, index: usize) -> &mut T;
-    async fn broadcast_message(&mut self, msg: Message) -> Result<(), Error>;
-}
-
-impl VecExt<Player> for Vec<Player> {
-    fn evil_get(&mut self, id: usize) -> &mut Player {
-        self.iter_mut().find(|p| p.id == id as u32).unwrap()
-    }
-
-    async fn broadcast_message(&mut self, msg: Message) -> Result<(), Error> {
-        for player in &mut self.iter_mut() {
-            player.send_message(msg.clone()).await?;
-        }
-        Ok(())
-    }
-}
+mod game;
+mod lobby;
+mod player;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -104,50 +28,18 @@ async fn main() -> Result<(), anyhow::Error> {
         }
     };
 
+    let lobby = Lobby::new().await;
     let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
+
+    let mut player_count = 0;
     loop {
-        let players = Arc::new(Mutex::new(vec![]));
-        let mut threads = vec![];
+        let (stream, addr) = listener.accept().await?;
 
-        for i in 0..3 {
-            let players = Arc::clone(&players);
-            let (stream, addr) = listener.accept().await?;
+        println!("client with ip: {}, joined!", addr);
+        Lobby::add_new_player(lobby.clone(), stream, addr.to_string(), player_count).await;
 
-            println!("client with ip: {}, joined!", addr);
-
-            threads.push(tokio::spawn(async move {
-                let mut new_player = Player::new(stream, i, addr.to_string()).await;
-                let msg = Message::ConfirmJoin(i);
-                new_player.send_message(msg).await.unwrap();
-
-                let mut players_lock = players.lock().await;
-                players_lock.push(new_player);
-
-                let msgs = players_lock
-                    .iter_mut()
-                    .map(|player| {
-                        Message::PlayerJoin(PlayerJoinMessage {
-                            id: player.id,
-                            name: player.name.clone(),
-                        })
-                    })
-                    .collect::<Vec<_>>();
-
-                for msg in msgs {
-                    players_lock.broadcast_message(msg).await.unwrap();
-                }
-
-                mem::drop(players_lock);
-            }));
-        }
-
-        for t in threads {
-            let _ = t.await?;
-        }
-
-        let mutex = Arc::try_unwrap(players).expect("unreachable");
-        let players = mutex.into_inner();
-        tokio::spawn(async move { play_game(players).await });
+        player_count += 1;
+        sleep(Duration::from_millis(1)).await;
     }
 }
 
@@ -166,7 +58,7 @@ fn new_shuffled_deck() -> Vec<Card> {
     deck.shuffle(&mut rand::rng());
     deck
 }
-
+/*
 async fn play_game(mut players: Vec<Player>) -> Result<(), anyhow::Error> {
     let mut cards = new_shuffled_deck();
 
@@ -176,17 +68,14 @@ async fn play_game(mut players: Vec<Player>) -> Result<(), anyhow::Error> {
             /*let msg = Message::DrawCard(card.clone());
             let serialized = to_stdvec(&msg).unwrap();
             player.tcp_stream.write_all(&serialized).await?;*/
-            player.send_message(Message::DrawCard(card.clone())).await?;
+            player.send_message(Message::DrawCard(card.clone())).await;
         }
         sleep(Duration::from_millis(100)).await
     }
 
-    players.evil_get(0).send_message(Message::Hear).await?;
-    players.evil_get(1).send_message(Message::Say).await?;
-    players
-        .evil_get(2)
-        .send_message(Message::SayFurther)
-        .await?;
+    players.evil_get(0).send_message(Message::Hear).await;
+    players.evil_get(1).send_message(Message::Say).await;
+    players.evil_get(2).send_message(Message::SayFurther).await;
 
     match bid(&mut players).await? {
         Some(i) => {
@@ -213,9 +102,9 @@ async fn normal_game(
     for i in 0..3 {
         let p = players.evil_get(i);
         if i == solo {
-            p.send_message(Message::PlayNormalSolo).await?;
+            p.send_message(Message::PlayNormalSolo).await;
         } else {
-            p.send_message(Message::PlayNormalDuo).await?;
+            p.send_message(Message::PlayNormalDuo).await;
         }
     }
 
@@ -225,7 +114,7 @@ async fn normal_game(
     //Skat
     for _ in 0..2 {
         let msg = Message::DrawCard(skat.pop().unwrap());
-        players.evil_get(solo).send_message(msg).await?
+        players.evil_get(solo).send_message(msg).await
     }
 
     for _ in 0..2 {
@@ -237,7 +126,7 @@ async fn normal_game(
     let trump = players.evil_get(solo).expect_message_trump().await;
     players
         .broadcast_message(Message::Trump(trump.clone()))
-        .await?;
+        .await;
 
     let mut last_winner = 0;
 
@@ -249,7 +138,7 @@ async fn normal_game(
             players
                 .evil_get(current_player)
                 .send_message(Message::YourTurn)
-                .await?;
+                .await;
 
             let card = players
                 .evil_get(current_player)
@@ -304,7 +193,7 @@ async fn normal_game(
             loser_points: 60,
         })
     };
-    players.broadcast_message(won_msg).await?;
+    players.broadcast_message(won_msg).await;
 
     Ok(())
 }
@@ -332,10 +221,11 @@ async fn bid(players: &mut Vec<Player>) -> Result<Option<usize>, Error> {
             } else {
                 bid = val;
                 highest_bider = Some(i);
-                players.broadcast_message(Message::NewBid(bid)).await?;
+                players.broadcast_message(Message::NewBid(bid)).await;
             }
         }
     }
 
     Ok(highest_bider)
 }
+*/

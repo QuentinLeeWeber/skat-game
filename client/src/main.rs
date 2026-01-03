@@ -52,9 +52,7 @@ async fn main() -> Result<(), slint::PlatformError> {
     let hand_model = Rc::new(VecModel::from(Vec::<CardSlint>::new()));
     ui.set_hand(ModelRc::from(Rc::clone(&hand_model)));
 
-    let (sock_tx, sock_rx) = mpsc::channel::<Message>();
-
-    networking::connect_to_server(Arc::clone(&app_model), sock_rx, ui_weak.clone());
+    let sock_tx = networking::connect_to_server(Arc::clone(&app_model), ui_weak.clone());
 
     ui.on_play_card({
         let hand_model = Rc::clone(&hand_model);
