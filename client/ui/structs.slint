@@ -1,7 +1,12 @@
 export enum CardSuitSlint { clubs, diamond, heart, spade }
 export enum CardRankSlint { Seven, Eight, Nine, Ten, Jack, Queen, King, Ace }
+export enum AppState { Login, Lobby, PendingGame, Game }
 
 export struct CardSlint {
     rank: CardRankSlint,
     suit: CardSuitSlint,
+}
+
+export struct PlayerSlint {
+    name: string,
 }

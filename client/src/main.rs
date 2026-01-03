@@ -8,6 +8,7 @@ slint::include_modules!();
 
 mod networking;
 
+#[derive(Clone)]
 struct Player {
     id: u32,
     name: String,
@@ -47,6 +48,8 @@ async fn main() -> Result<(), slint::PlatformError> {
     let app_model = Arc::new(Mutex::new(AppModel::new()));
     let hand_model = Rc::new(VecModel::from(Vec::<CardSlint>::new()));
     ui.set_hand(ModelRc::from(Rc::clone(&hand_model)));
+    let players_model = Rc::new(VecModel::from(Vec::<PlayerSlint>::new()));
+    ui.set_players(ModelRc::from(Rc::clone(&players_model)));
 
     let sock_tx = networking::connect_to_server(Arc::clone(&app_model), ui_weak.clone());
 
@@ -173,6 +176,14 @@ impl From<Rank> for CardRankSlint {
             Rank::Queen => CardRankSlint::Queen,
             Rank::Seven => CardRankSlint::Seven,
             Rank::Ten => CardRankSlint::Ten,
+        }
+    }
+}
+
+impl From<Player> for PlayerSlint {
+    fn from(player: Player) -> Self {
+        PlayerSlint {
+            name: player.name.into(),
         }
     }
 }

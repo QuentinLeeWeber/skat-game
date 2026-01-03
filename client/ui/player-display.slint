@@ -1,0 +1,99 @@
+export { PlayersDisplay }
+
+import { VerticalBox, Button, Palette } from "std-widgets.slint";
+import { PlayerSlint } from "structs.slint";
+
+component PlayerDP inherits Rectangle {
+    background: rgba(0, 255, 0, 0.5);
+    preferred-height: self.width * 30%;
+
+    property<length> radius: self.width * 15%;
+    in-out property<string> name;
+
+    Rectangle {
+        property<length> size-diff: 10px;
+        x: radius;
+        y: size-diff;
+        height: (radius - size-diff) * 2;
+        width: parent.width - radius - size-diff - self.height / 2;
+        background: Palette.background;
+        Rectangle {
+            property<length> litte-radius: parent.height / 2;
+            background: Palette.background;
+            x: parent.width - litte-radius;
+            y: parent.height / 2 - litte-radius;
+            border-radius: litte-radius;
+            width: litte-radius * 2;
+            height: litte-radius * 2;
+        }
+
+        Text {
+            x: radius + 5px;
+            text: name;
+            vertical-alignment: center;
+            color: Palette.control-foreground;
+            font-size: parent.height / 2;
+        }
+    }
+
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: radius * 2;
+        height: radius * 2;
+        border-radius: radius;
+        background: Palette.background;
+    }
+
+    Rectangle {
+        property<length> radius-diff: 7px;
+        x: radius-diff;
+        y: radius-diff;
+        width: (radius - radius-diff) * 2;
+        height: (radius - radius-diff) * 2;
+        border-radius: (radius - radius-diff);
+        clip: true;
+        Image {
+            x: 0;
+            y: 0;
+            width: parent.width;
+            height: parent.height;
+            source: @image-url("textures/default_profile_pic.png");
+        }
+    }
+}
+
+component PlayersDisplay inherits Rectangle {
+    in property<[PlayerSlint]> players;
+    in property<string> self-name;
+    background: rgba(255, 0, 0, 0.5);
+
+    VerticalLayout {
+        spacing: 10px;
+        alignment: start;
+        PlayerDP {
+            name: root.self-name;
+        }
+
+        for player[i] in players : PlayerDP {
+            name: player.name;
+        }
+    }
+    
+    if (players.length == 1) : Rectangle {
+        x: 100px;
+        y: 100px;
+        height: 100px;
+        width: 100px;
+        background: rgb(0, 255, 255);
+    }
+
+    Rectangle {
+        x: 200px;
+        y: 100px;
+        height: 100px;
+        width: 100px;
+        background: rgb(0, 255, 0);
+    }
+}
+

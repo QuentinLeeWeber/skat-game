@@ -1,9 +1,8 @@
 import { VerticalBox, Button, Palette } from "std-widgets.slint";
 import { CardsDisplay } from "cards-display.slint";
-import { CardSuitSlint, CardRankSlint, CardSlint } from "structs.slint";
+import { CardSuitSlint, CardRankSlint, CardSlint, PlayerSlint, AppState } from "structs.slint";
 import { HomeScreen } from "home-screen.slint";
-
-enum AppState { Login, Lobby, PendingGame, Game }
+import { PlayersDisplay } from "player-display.slint";
 
 export component MainWindow inherits Window {
     callback play_card(card: CardSlint);
@@ -14,6 +13,7 @@ export component MainWindow inherits Window {
     in-out property<[CardSlint]> hand;
     in property <string> name;
     in-out property<AppState> app_state;
+    in-out property<[PlayerSlint]> players;
 
     Rectangle {
         background: @radial-gradient(circle, #007400 0%, #004400 100%);
@@ -37,6 +37,14 @@ export component MainWindow inherits Window {
 
     if (app_state == AppState.Lobby || app_state == AppState.Login) : HomeScreen {
         clicked => root.join_game();
+    }
+
+    if (app_state == AppState.PendingGame || app_state == AppState.Game) : PlayersDisplay {
+        x: 0;
+        y: 0;
+        width: max(root.width * 30%, 200px);
+        players: root.players;
+        self-name: root.name;
     }
 
     property <string> input_text: "";

@@ -1,4 +1,4 @@
-use crate::{AppState, CardSlint, MainWindow, Player};
+use crate::{AppState, CardSlint, MainWindow, Player, PlayerSlint};
 use proto::*;
 use slint::{Model, VecModel, Weak};
 use std::sync::mpsc;
@@ -129,15 +129,29 @@ fn spawn_reciever_thread(
 
                     if is_me && app_model.state == AppState::Lobby {
                         app_model.state = AppState::PendingGame;
+                        let ui = ui.clone();
                         let _ = slint::invoke_from_event_loop(move || {
                             ui.unwrap().set_app_state(AppState::PendingGame);
                         });
                     }
 
                     if !is_me && !is_other {
-                        app_model.other_player.push(Player {
+                        let player = Player {
                             name: new_player.name,
                             id: new_player.id,
+                        };
+
+                        app_model.other_player.push(player.clone());
+                        let _ = slint::invoke_from_event_loop(move || {
+                            if let Some(ui) = ui.upgrade() {
+                                let players = ui.get_players();
+                                let vec_model = players
+                                    .as_any()
+                                    .downcast_ref::<VecModel<PlayerSlint>>()
+                                    .unwrap();
+
+                                vec_model.push(player.into());
+                            }
                         });
                     }
                 }
