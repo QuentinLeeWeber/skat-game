@@ -1,4 +1,4 @@
-use crate::player::Player;
+use crate::knows_skat::player::Player;
 use proto::*;
 use std::{mem, vec};
 use tokio::task::JoinHandle;

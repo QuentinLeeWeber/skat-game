@@ -1,3 +1,4 @@
+use crate::knows_skat::{KnowsSkatRules, knows_skat_rules};
 use crate::lobby::LobbyCommand;
 use macros::message_types;
 use proto::*;
@@ -37,6 +38,12 @@ impl Drop for Player {
         self.network_handle.abort();
         self.keep_alive_handle.abort();
     }
+}
+
+impl KnowsSkatRules for Player {
+    fn expect_message(&mut self) -> impl Future<Output = Message> {}
+
+    async fn send_message(&mut self, msg: Message) {}
 }
 
 impl Player {

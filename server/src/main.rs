@@ -11,8 +11,8 @@ use tokio::time::{Duration, sleep};
 mod tests;
 
 mod game;
+mod knows_skat;
 mod lobby;
-mod player;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
