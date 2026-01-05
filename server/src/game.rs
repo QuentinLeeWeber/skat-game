@@ -1,4 +1,4 @@
-use crate::knows_skat::KnowsSkatRules;
+use crate::knows_skat::{KnowsSkatRules, npc::NPC};
 use proto::*;
 use std::{fmt::Debug, mem, vec};
 use tokio::task::JoinHandle;
@@ -85,7 +85,9 @@ impl PendingGame {
         )
     }
 
-    pub async fn add_npc(&mut self) {}
+    pub async fn add_npc(&mut self, id: u32) {
+        self.add_player(Box::new(NPC::new(id))).await;
+    }
 
     async fn broadcast_message(&mut self, msg: Message) {
         if let Some(p) = &mut self.player_1 {

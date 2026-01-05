@@ -31,14 +31,12 @@ async fn main() -> Result<(), anyhow::Error> {
     let lobby = Lobby::new().await;
     let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
 
-    let mut player_count = 0;
     loop {
         let (stream, addr) = listener.accept().await?;
 
         println!("client with ip: {}, joined!", addr);
-        Lobby::add_new_player(lobby.clone(), stream, addr.to_string(), player_count).await;
+        Lobby::add_new_player(lobby.clone(), stream, addr.to_string()).await;
 
-        player_count += 1;
         sleep(Duration::from_millis(1)).await;
     }
 }

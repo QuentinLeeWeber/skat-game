@@ -38,8 +38,8 @@ export component PendingGame inherits HorizontalLayout {
 
         Button {
             text: "Add NPC";
-            width: 50px;
-            x: parent.width / 2 - self.width;
+            width: 100px;
+            x: parent.width / 2 - self.width / 2;
             clicked => root.add_npc();
         }
     }

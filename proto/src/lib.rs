@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum Message {
+    #[default]
+    None,
     Login(String),
     ConfirmJoin(u32),
     PlayerJoin(PlayerJoinMessage),

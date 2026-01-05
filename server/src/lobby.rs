@@ -21,6 +21,7 @@ pub struct Lobby {
     pending_game: PendingGame,
     task_handle: JoinHandle<()>,
     cmd_channel: mpsc::Sender<LobbyCommand>,
+    player_count: u32,
 }
 
 impl Drop for Lobby {
@@ -39,6 +40,7 @@ impl Lobby {
             pending_game: PendingGame::default(),
             task_handle: tokio::spawn(async {}),
             cmd_channel: cmd_cnl_tx,
+            player_count: 0,
         }));
 
         let task_handle = Self::spawn_task(this_lobby.clone(), cmd_cnl_rx);
@@ -95,7 +97,10 @@ impl Lobby {
                                 }
                             }
                             LobbyCommand::AddNPC => {
-                                this_lobby.lock().await.pending_game.add_npc().await;
+                                let mut this_lobby = this_lobby.lock().await;
+                                let id = this_lobby.player_count;
+                                this_lobby.pending_game.add_npc(id).await;
+                                this_lobby.player_count += 1;
                             }
                         }
                     }
@@ -142,8 +147,13 @@ impl Lobby {
         }
     }
 
-    pub async fn add_new_player(this: Arc<Mutex<Lobby>>, stream: TcpStream, addr: String, id: u32) {
+    pub async fn add_new_player(this: Arc<Mutex<Lobby>>, stream: TcpStream, addr: String) {
         let cmd_channel = this.lock().await.cmd_channel.clone();
+        let id = {
+            let mut this = this.lock().await;
+            this.player_count += 1;
+            this.player_count - 1
+        };
         let mut new_player = Player::new(stream, id, addr.to_string(), cmd_channel);
         let msg = Message::ConfirmJoin(id);
         new_player.send_message(msg).await;
