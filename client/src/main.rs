@@ -94,8 +94,15 @@ async fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
-    ui.on_join_game(move || {
-        let _ = sock_tx.send(Message::JoinGame);
+    ui.on_join_game({
+        let sock_tx = sock_tx.clone();
+        move || {
+            let _ = sock_tx.send(Message::JoinGame);
+        }
+    });
+
+    ui.on_add_npc(move || {
+        let _ = sock_tx.send(Message::AddNPC);
     });
 
     let weak_app = ui.as_weak();

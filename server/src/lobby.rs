@@ -11,6 +11,7 @@ pub enum LobbyCommand {
     JoinGame { player_id: u32 },
     Disconnect { player_id: u32 },
     Login { player_id: u32, name: String },
+    AddNPC,
 }
 
 pub struct Lobby {
@@ -91,6 +92,9 @@ impl Lobby {
                                 if let Some(player) = player {
                                     player.name = name;
                                 }
+                            }
+                            LobbyCommand::AddNPC => {
+                                this_lobby.lock().await.pending_game.add_npc();
                             }
                         }
                     }

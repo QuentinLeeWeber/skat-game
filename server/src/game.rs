@@ -85,6 +85,8 @@ impl PendingGame {
         )
     }
 
+    pub async fn add_npc(&mut self) {}
+
     async fn broadcast_message(&mut self, msg: Message) {
         if let Some(p) = &mut self.player_1 {
             p.send_message(msg.clone()).await;

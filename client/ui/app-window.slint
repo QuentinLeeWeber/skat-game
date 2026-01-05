@@ -3,12 +3,14 @@ import { CardsDisplay } from "cards-display.slint";
 import { CardSuitSlint, CardRankSlint, CardSlint, PlayerSlint, AppState } from "structs.slint";
 import { HomeScreen } from "home-screen.slint";
 import { PlayersDisplay } from "player-display.slint";
+import { PendingGame } from "pending-game-screen.slint";
 
 export component MainWindow inherits Window {
     callback play_card(card: CardSlint);
     callback set_position(from: int, to: int);
     callback submit_name(name: string);
     callback join_game;
+    callback add_npc;
     
     in-out property<[CardSlint]> hand;
     in property <string> name;
@@ -29,14 +31,18 @@ export component MainWindow inherits Window {
         transform-origin: {x: self.width / 2, y: self.height / 2};
     }
 
-    CardsDisplay { 
+    if (app_state == AppState.Game) : CardsDisplay { 
         hand: hand;
-        play_card(card) => root.play_card(card);
-        set_position(from, to) => root.set_position(from, to);
+        play_card(card) => { root.play_card(card); }
+        set_position(from, to) => { root.set_position(from, to); }
     }
 
     if (app_state == AppState.Lobby || app_state == AppState.Login) : HomeScreen {
-        clicked => root.join_game();
+        clicked => { root.join_game(); }
+    }
+
+    if (app_state == AppState.PendingGame) : PendingGame {
+        add_npc => { root.add_npc(); }
     }
 
     if (app_state != AppState.Login) : PlayersDisplay {

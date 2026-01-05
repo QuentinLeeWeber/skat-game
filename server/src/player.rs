@@ -79,6 +79,7 @@ impl Player {
     }
 
     pub async fn send_message(&mut self, msg: Message) {
+        println!("sending message: {:?}, to Player: {}", msg, self.name);
         let mut serialized = serde_json::to_string(&msg).unwrap();
         serialized.push('\n');
         if let Err(_) = self.tcp_writer.write_all(&serialized.as_bytes()).await {
@@ -142,6 +143,12 @@ impl Player {
                                     player_id: id,
                                     name,
                                 })
+                                .await
+                                .unwrap_or_else(|_| unreachable!());
+                        }
+                        Some(Message::AddNPC) => {
+                            lobby_cmd_cnl
+                                .send(LobbyCommand::AddNPC)
                                 .await
                                 .unwrap_or_else(|_| unreachable!());
                         }

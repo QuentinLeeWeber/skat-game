@@ -1,0 +1,46 @@
+import { Button, Palette } from "std-widgets.slint";
+
+export component PendingGame inherits HorizontalLayout {
+    callback add_npc;
+    alignment: center;
+    VerticalLayout {
+        property<int> point_count;
+        alignment: center;
+
+        if (Math.mod(point_count, 4) == 0) : Text { 
+            color: Palette.control-foreground;
+            text: "Waiting for more Player"; 
+            font-size: 20pt;
+        }
+        if (Math.mod(point_count, 4) == 1) : Text { 
+            color: Palette.control-foreground;
+            text: "Waiting for more Player."; 
+            font-size: 20pt;
+        }
+        if (Math.mod(point_count, 4) == 2) : Text { 
+            color: Palette.control-foreground;
+            text: "Waiting for more Player.."; 
+            font-size: 20pt;
+        }
+        if (Math.mod(point_count, 4) == 3) : Text {
+            color: Palette.control-foreground;
+            text: "Waiting for more Player..."; 
+            font-size: 20pt;
+        }
+        
+        Timer {
+            interval: 450ms;
+            running: true;
+            triggered() => {
+                point_count += 1;
+            }
+        }
+
+        Button {
+            text: "Add NPC";
+            width: 50px;
+            x: parent.width / 2 - self.width;
+            clicked => root.add_npc();
+        }
+    }
+}
