@@ -1,4 +1,4 @@
-use crate::knows_skat::{KnowsSkatRules, player};
+use crate::knows_skat::KnowsSkatRules;
 use crate::lobby::LobbyCommand;
 use async_trait::async_trait;
 use macros::message_types;

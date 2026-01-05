@@ -24,6 +24,7 @@ pub enum Message {
     JoinGame,
     PlayerLeave(u32),
     AddNPC,
+    StartGame,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

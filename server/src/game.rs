@@ -1,4 +1,4 @@
-use crate::knows_skat::{KnowsSkatRules, npc::NPC};
+use crate::knows_skat::KnowsSkatRules;
 use proto::*;
 use std::{fmt::Debug, mem, vec};
 use tokio::task::JoinHandle;
@@ -8,11 +8,11 @@ pub struct PendingGame {
     player_1: Option<Box<dyn KnowsSkatRules>>,
     player_2: Option<Box<dyn KnowsSkatRules>>,
     player_3: Option<Box<dyn KnowsSkatRules>>,
-    pub player_count: u32,
+    player_count: u32,
 }
 
 impl PendingGame {
-    pub async fn add_player(&mut self, player: Box<dyn KnowsSkatRules>) {
+    pub async fn add_player(&mut self, player: Box<dyn KnowsSkatRules>) -> Option<Game> {
         println!("player: {} joined Pending Game", player.name());
         match self.player_count {
             0 => {
@@ -42,6 +42,14 @@ impl PendingGame {
             self.broadcast_message(msg).await;
         }
         println!("pending game is now:\n{:#?}", self);
+
+        if self.player_count == 3 {
+            println!("pending game full: starting new game!");
+            self.broadcast_message(Message::StartGame).await;
+            Some(self.to_game())
+        } else {
+            None
+        }
     }
 
     pub async fn try_remove_player(&mut self, id: u32) {
@@ -75,18 +83,13 @@ impl PendingGame {
         }
     }
 
-    pub fn to_game(&mut self, id: u32) -> Game {
+    pub fn to_game(&mut self) -> Game {
         self.player_count = 0;
         Game::new(
             mem::take(&mut self.player_1).unwrap(),
             mem::take(&mut self.player_2).unwrap(),
             mem::take(&mut self.player_3).unwrap(),
-            id,
         )
-    }
-
-    pub async fn add_npc(&mut self, id: u32) {
-        self.add_player(Box::new(NPC::new(id))).await;
     }
 
     async fn broadcast_message(&mut self, msg: Message) {
@@ -103,7 +106,6 @@ impl PendingGame {
 }
 
 pub struct Game {
-    id: u32,
     player_1: Box<dyn KnowsSkatRules>,
     player_2: Box<dyn KnowsSkatRules>,
     player_3: Box<dyn KnowsSkatRules>,
@@ -115,11 +117,9 @@ impl Game {
         player_1: Box<dyn KnowsSkatRules>,
         player_2: Box<dyn KnowsSkatRules>,
         player_3: Box<dyn KnowsSkatRules>,
-        id: u32,
     ) -> Game {
         let task_handle = tokio::spawn(async move {});
         Game {
-            id,
             player_1,
             player_2,
             player_3,

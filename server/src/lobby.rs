@@ -1,6 +1,6 @@
 use crate::game::{Game, PendingGame};
-use crate::knows_skat::KnowsSkatRules;
 use crate::knows_skat::player::Player;
+use crate::knows_skat::{KnowsSkatRules, npc::NPC};
 use proto::*;
 use std::sync::Arc;
 use tokio::net::TcpStream;
@@ -54,30 +54,23 @@ impl Lobby {
     ) -> JoinHandle<()> {
         tokio::spawn({
             async move {
-                let mut game_count = 0;
-
                 loop {
                     if let Some(cmd) = cmd_cnl_rx.recv().await {
                         match cmd {
                             LobbyCommand::JoinGame { player_id } => {
+                                let mut this_lobby = this_lobby.lock().await;
                                 let player_pos = this_lobby
-                                    .lock()
-                                    .await
                                     .players
                                     .iter()
                                     .position(|p| p.id == player_id)
                                     .clone();
 
                                 if let Some(pos) = player_pos {
-                                    let player = this_lobby.lock().await.players.remove(pos);
-                                    let pending_game = &mut this_lobby.lock().await.pending_game;
-                                    pending_game.add_player(Box::new(player)).await;
-                                    if pending_game.player_count == 3 {
-                                        this_lobby
-                                            .lock()
-                                            .await
-                                            .games
-                                            .push(pending_game.to_game(game_count));
+                                    let player = this_lobby.players.remove(pos);
+                                    if let Some(game) =
+                                        this_lobby.pending_game.add_player(Box::new(player)).await
+                                    {
+                                        this_lobby.games.push(game);
                                     }
                                 }
                             }
@@ -98,13 +91,18 @@ impl Lobby {
                             }
                             LobbyCommand::AddNPC => {
                                 let mut this_lobby = this_lobby.lock().await;
-                                let id = this_lobby.player_count;
-                                this_lobby.pending_game.add_npc(id).await;
                                 this_lobby.player_count += 1;
+                                let new_id = this_lobby.player_count;
+                                if let Some(game) = this_lobby
+                                    .pending_game
+                                    .add_player(Box::new(NPC::new(new_id)))
+                                    .await
+                                {
+                                    this_lobby.games.push(game);
+                                }
                             }
                         }
                     }
-                    game_count += 1;
                     sleep(Duration::from_millis(1)).await;
                 }
             }
@@ -119,7 +117,7 @@ impl Lobby {
         let remove_game = self.games.iter().position(|g| g.has_player_by_id(id));
 
         if let Some(remove_game) = remove_game {
-            println!("removed Lobby with player");
+            println!("removed Game with player: {}", id);
             let game = self.games.remove(remove_game);
 
             let mut remaining_player: Vec<Player> = game
