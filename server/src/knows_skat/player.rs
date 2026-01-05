@@ -1,5 +1,6 @@
-use crate::knows_skat::{KnowsSkatRules, knows_skat_rules};
+use crate::knows_skat::{KnowsSkatRules, player};
 use crate::lobby::LobbyCommand;
+use async_trait::async_trait;
 use macros::message_types;
 use proto::*;
 use std::fmt;
@@ -40,10 +41,37 @@ impl Drop for Player {
     }
 }
 
+#[async_trait]
 impl KnowsSkatRules for Player {
-    fn expect_message(&mut self) -> impl Future<Output = Message> {}
+    #[message_types(Trump(Suit), PlayCard(Card), Bid(i32))]
+    async fn expect_message(&mut self) -> Message {
+        self.read_message().await
+    }
 
-    async fn send_message(&mut self, msg: Message) {}
+    async fn send_message(&mut self, msg: Message) {
+        println!("sending message: {:?}, to Player: {}", msg, self.name);
+        let mut serialized = serde_json::to_string(&msg).unwrap();
+        serialized.push('\n');
+        if let Err(_) = self.tcp_writer.write_all(&serialized.as_bytes()).await {
+            println!(
+                "player: {}, failed to send a Message: disconnecting",
+                self.name
+            );
+            self.disconnect().await;
+        }
+    }
+
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn id(&self) -> u32 {
+        self.id
+    }
+
+    fn into_any(self: Box<Self>) -> Box<dyn std::any::Any> {
+        self
+    }
 }
 
 impl Player {
@@ -72,30 +100,12 @@ impl Player {
         }
     }
 
-    #[message_types(Trump(Suit), PlayCard(Card), Bid(i32))]
-    async fn expect_message(&mut self) -> Message {
-        self.read_message().await
-    }
-
     async fn disconnect(&mut self) {
         println!("player: {} wants to disconnect", self.name);
         self.lobby_cmd_cnl
             .send(LobbyCommand::Disconnect { player_id: self.id })
             .await
             .unwrap_or_else(|_| unreachable!());
-    }
-
-    pub async fn send_message(&mut self, msg: Message) {
-        println!("sending message: {:?}, to Player: {}", msg, self.name);
-        let mut serialized = serde_json::to_string(&msg).unwrap();
-        serialized.push('\n');
-        if let Err(_) = self.tcp_writer.write_all(&serialized.as_bytes()).await {
-            println!(
-                "player: {}, failed to send a Message: disconecting",
-                self.name
-            );
-            self.disconnect().await;
-        }
     }
 
     async fn read_message(&mut self) -> Message {

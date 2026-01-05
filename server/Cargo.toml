@@ -11,3 +11,4 @@ macros = { path = "../macros" }
 rand = "0.9.2"
 heapless = "0.9.2"
 serde_json = "1.0.148"
+async-trait = "0.1.89"

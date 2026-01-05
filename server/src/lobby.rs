@@ -1,4 +1,5 @@
 use crate::game::{Game, PendingGame};
+use crate::knows_skat::KnowsSkatRules;
 use crate::knows_skat::player::Player;
 use proto::*;
 use std::sync::Arc;
@@ -68,7 +69,7 @@ impl Lobby {
                                 if let Some(pos) = player_pos {
                                     let player = this_lobby.lock().await.players.remove(pos);
                                     let pending_game = &mut this_lobby.lock().await.pending_game;
-                                    pending_game.add_player(player).await;
+                                    pending_game.add_player(Box::new(player)).await;
                                     if pending_game.player_count == 3 {
                                         this_lobby
                                             .lock()
@@ -94,7 +95,7 @@ impl Lobby {
                                 }
                             }
                             LobbyCommand::AddNPC => {
-                                this_lobby.lock().await.pending_game.add_npc();
+                                this_lobby.lock().await.pending_game.add_npc().await;
                             }
                         }
                     }
@@ -116,8 +117,12 @@ impl Lobby {
             println!("removed Lobby with player");
             let game = self.games.remove(remove_game);
 
-            let mut remaining_player: Vec<Player> =
-                game.close().into_iter().filter(|p| p.id != id).collect();
+            let mut remaining_player: Vec<Player> = game
+                .close()
+                .into_iter()
+                .filter_map(|x| x.into_any().downcast::<Player>().ok().map(|b| *b))
+                .filter(|p| p.id() != id)
+                .collect();
 
             remaining_player
                 .broadcast_message(Message::BackToLobby)

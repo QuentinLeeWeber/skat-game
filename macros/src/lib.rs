@@ -1,10 +1,114 @@
 use convert_case::{Case, Casing};
 use proc_macro::{TokenStream, TokenTree};
+use proc_macro2::{Ident, Span};
 use quote::quote_spanned;
+use syn::Type;
+
+struct Attribute {
+    new_fn_name: Ident,
+    return_type: Option<Type>,
+    some_res: Ident,
+    span: Span,
+}
+
+#[proc_macro_attribute]
+pub fn message_types_trait(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let mut stream = TokenStream::new();
+    for attr in parse_attributes(attr) {
+        let Attribute {
+            new_fn_name,
+            span,
+            return_type,
+            ..
+        } = attr;
+
+        let generated = match return_type {
+            Some(return_type) => {
+                quote_spanned! {span=>
+                    fn #new_fn_name<'life0, 'async_trait>(&'life0 mut self) -> ::core::pin::Pin<
+                        Box<
+                            dyn ::core::future::Future<Output = #return_type> + core::marker::Send + 'async_trait
+                        >
+                    >
+                    where
+                        'life0: 'async_trait,
+                        Self: 'async_trait;
+                }
+            }
+            None => {
+                quote_spanned! {span=>
+                    async fn #new_fn_name(&mut self);
+                }
+            }
+        };
+
+        stream.extend(TokenStream::from(generated));
+    }
+    stream.extend(item);
+
+    stream
+}
 
 #[proc_macro_attribute]
 pub fn message_types(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut stream = TokenStream::new();
+
+    for attr in parse_attributes(attr) {
+        let Attribute {
+            new_fn_name,
+            span,
+            some_res,
+            return_type,
+        } = attr;
+
+        let generated = match return_type {
+            Some(return_type) => {
+                quote_spanned! {span=>
+                    fn #new_fn_name<'life0, 'async_trait>(&'life0 mut self) -> ::core::pin::Pin<
+                        Box<
+                            dyn ::core::future::Future<Output = #return_type> + core::marker::Send + 'async_trait
+                        >
+                    >
+                    where
+                        'life0: 'async_trait,
+                        Self: 'async_trait
+                    {
+                        Box::pin(async move {
+                            loop {
+                                let message = self.expect_message().await;
+                                if let Message::#some_res(inner) = message {
+                                    return inner;
+                                }
+                                eprintln!("warning: recieved unexpected Message: {:?}", message);
+                            }
+                        })
+                    }
+                }
+            }
+            None => {
+                quote_spanned! {span=>
+                    async fn #new_fn_name(&mut self) {
+                        loop {
+                            let message = self.expect_message().await;
+                            if message == Message::#some_res {
+                                return;
+                            }
+                            eprintln!("warning: recieved unexpected Message: {:?}", message);
+                        }
+                    }
+                }
+            }
+        };
+
+        stream.extend(TokenStream::from(generated));
+    }
+    stream.extend(item);
+    stream
+}
+
+fn parse_attributes(attr: TokenStream) -> Vec<Attribute> {
+    let mut attrs = Vec::new();
+
     let mut attr = attr
         .into_iter()
         .collect::<Vec<TokenTree>>()
@@ -46,41 +150,16 @@ pub fn message_types(attr: TokenStream, item: TokenStream) -> TokenStream {
             let some_res = format!("{}", member_pascal_case);
             let some_res = syn::Ident::new(&some_res, span);
 
-            let generated = match return_type {
-                Some(return_type) => {
-                    quote_spanned! {span=>
-                        async fn #new_fn_name(&mut self) -> #return_type {
-                            loop {
-                                let message = self.expect_message().await;
-                                if let Message::#some_res(inner) = message {
-                                    return inner;
-                                }
-                                eprintln!("warning: recieved unexpected Message: {:?}", message);
-                            }
-                        }
-                    }
-                }
-                None => {
-                    quote_spanned! {span=>
-                        async fn #new_fn_name(&mut self) {
-                            loop {
-                                let message = self.expect_message().await;
-                                if message == Message::#some_res {
-                                    return;
-                                }
-                                eprintln!("warning: recieved unexpected Message: {:?}", message);
-                            }
-                        }
-                    }
-                }
-            };
-
-            stream.extend(TokenStream::from(generated));
+            attrs.push(Attribute {
+                some_res,
+                new_fn_name,
+                return_type,
+                span,
+            });
         }
         typ_option = attr.next();
     }
-    stream.extend(item);
-    stream
+    attrs
 }
 
 fn extract_inside_parentheses(s: &str) -> Option<String> {

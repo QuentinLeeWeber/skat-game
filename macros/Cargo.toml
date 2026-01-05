@@ -8,6 +8,7 @@ syn = "2.0"
 quote = "1.0"
 proto = { path = "../proto" }
 convert_case = "0.10.0"
+proc-macro2 = "1.0.104"
 
 [lib]
 proc-macro = true
