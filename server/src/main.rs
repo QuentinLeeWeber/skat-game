@@ -13,6 +13,7 @@ mod tests;
 mod game;
 mod knows_skat;
 mod lobby;
+mod pending_game;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {

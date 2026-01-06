@@ -1,6 +1,6 @@
-use crate::game::{Game, PendingGame};
 use crate::knows_skat::player::Player;
 use crate::knows_skat::{KnowsSkatRules, npc::NPC};
+use crate::{game::Game, pending_game::PendingGame};
 use proto::*;
 use std::sync::Arc;
 use tokio::net::TcpStream;
