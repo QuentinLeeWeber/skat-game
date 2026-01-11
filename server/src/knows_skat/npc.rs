@@ -13,10 +13,13 @@ pub struct NPC {
 impl NPC {
     pub fn new(id: u32) -> Self {
         use proto::{Rank::*, Suit::*};
-        let msg_stack = vec![(Spades, Ace), (Diamonds, Ace), (Clubs, Ace), (Hearts, Ace)]
-            .into_iter()
-            .map(|(suit, rank)| Message::PlayCard(Card { suit, rank }))
-            .collect();
+        let mut msg_stack: VecDeque<Message> =
+            vec![(Spades, Ace), (Diamonds, Ace), (Clubs, Ace), (Hearts, Ace)]
+                .into_iter()
+                .map(|(suit, rank)| Message::PlayCard(Card { suit, rank }))
+                .collect();
+
+        msg_stack.push_front(Message::Bid(0));
 
         Self {
             id,
@@ -30,7 +33,9 @@ impl NPC {
 impl KnowsSkatRules for NPC {
     #[message_types(Trump(Suit), PlayCard(Card), Bid(i32))]
     async fn expect_message(&mut self) -> Message {
-        self.msg_stack.pop_front().unwrap_or_default()
+        let msg = self.msg_stack.pop_front().unwrap_or_default();
+        println!("npc with id: {}: {:?}", self.id, msg);
+        msg
     }
 
     async fn send_message(&mut self, _msg: Message) {}

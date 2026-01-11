@@ -79,7 +79,8 @@ pub fn message_types(attr: TokenStream, item: TokenStream) -> TokenStream {
                                 if let Message::#some_res(inner) = message {
                                     return inner;
                                 }
-                                eprintln!("warning: recieved unexpected Message: {:?}", message);
+                                eprintln!("warning: player: {:#?} recieved unexpected Message: {:?}", self, message);
+                                ::tokio::time::sleep(::tokio::time::Duration::from_millis(1999)).await;
                             }
                         })
                     }
@@ -93,7 +94,8 @@ pub fn message_types(attr: TokenStream, item: TokenStream) -> TokenStream {
                             if message == Message::#some_res {
                                 return;
                             }
-                            eprintln!("warning: recieved unexpected Message: {:?}", message);
+                            eprintln!("warning: player: {:#?} recieved unexpected Message: {:?}", self, message);
+                            ::tokio::time::sleep(::tokio::time::Duration::from_millis(1090)).await;
                         }
                     }
                 }

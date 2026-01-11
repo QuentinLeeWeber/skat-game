@@ -12,6 +12,7 @@ pub struct Game {
     cycle_count: i32,
     playing_player: Option<i32>,
     cards: Vec<Card>,
+    game_value: u32,
 }
 
 impl Game {
@@ -27,6 +28,7 @@ impl Game {
             cycle_count: 0,
             playing_player: None,
             cards: new_shuffled_deck(),
+            game_value: 0,
         }
     }
 
@@ -50,6 +52,15 @@ impl Game {
 
     fn map_players(&mut self) -> Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>> {
         match self.cycle_count.rem_euclid(3) {
+            0 => Arc::clone(&self.player_1),
+            1 => Arc::clone(&self.player_2),
+            2 => Arc::clone(&self.player_3),
+            _ => unreachable!(),
+        }
+    }
+
+    fn player_by_id(&mut self, id: i32) -> Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>> {
+        match id.rem_euclid(3) {
             0 => Arc::clone(&self.player_1),
             1 => Arc::clone(&self.player_2),
             2 => Arc::clone(&self.player_3),
@@ -114,7 +125,7 @@ impl Game {
             .await
             .as_mut()
             .unwrap()
-            .send_message(Message::AssignBitRole(BitRole::Hear))
+            .send_message(Message::AssignBidRole(BidRole::Hear))
             .await;
 
         self.next_player()
@@ -122,7 +133,7 @@ impl Game {
             .await
             .as_mut()
             .unwrap()
-            .send_message(Message::AssignBitRole(BitRole::Say))
+            .send_message(Message::AssignBidRole(BidRole::Say))
             .await;
 
         self.next_player()
@@ -130,31 +141,41 @@ impl Game {
             .await
             .as_mut()
             .unwrap()
-            .send_message(Message::AssignBitRole(BitRole::SayFurther))
+            .send_message(Message::AssignBidRole(BidRole::SayFurther))
             .await;
     }
 
     async fn bid(&mut self) {
-        let mut bid;
         for i in [0, 2, 1] {
             loop {
                 let val = self
-                    .prev_player()
+                    .player_by_id(i)
                     .lock()
                     .await
                     .as_mut()
                     .unwrap()
                     .expect_message_bid()
                     .await;
+
                 if val == 0 {
                     break;
                 } else {
-                    bid = val;
+                    self.increase_game_value();
                     self.playing_player = Some(i);
-                    self.broadcast_message(Message::NewBid(bid)).await;
+                    self.broadcast_message(Message::NewBid(self.game_value as i32))
+                        .await;
                 }
             }
         }
+    }
+
+    fn increase_game_value(&mut self) {
+        let possible_values = vec![
+            0, 18, 20, 22, 23, 24, 27, 30, 33, 35, 36, 40, 44, 45, 46, 48, 50, 55, 59, 60, 72, 96,
+            120,
+        ];
+        let last_index = possible_values.iter().position(|i| *i == self.game_value);
+        self.game_value = *possible_values.get(last_index.unwrap() + 1).unwrap();
     }
 
     async fn normal_game(&mut self) {}

@@ -8,7 +8,7 @@ pub enum Message {
     ConfirmJoin(u32),
     PlayerJoin(PlayerJoinMessage),
     DrawCard(Card),
-    AssignBitRole(BitRole),
+    AssignBidRole(BidRole),
     Bid(i32),
     NewBid(i32),
     PlayCard(Card),
@@ -31,7 +31,7 @@ pub enum GameRole {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum BitRole {
+pub enum BidRole {
     Hear,
     Say,
     SayFurther,

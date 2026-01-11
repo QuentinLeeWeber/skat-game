@@ -1,5 +1,5 @@
 use proto::*;
-use slint::{Model, ModelRc, VecModel, Weak};
+use slint::{Model, ModelRc, VecModel};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
@@ -55,12 +55,16 @@ async fn main() -> Result<(), slint::PlatformError> {
 
     ui.on_play_card({
         let hand_model = Rc::clone(&hand_model);
+        let app_model = Arc::clone(&app_model);
+        let sock_tx = sock_tx.clone();
 
         move |card| {
-            println!("Playing card: {:?}", card);
-            let index = hand_model.iter().position(|c| c == card);
-            if let Some(i) = index {
-                hand_model.remove(i);
+            if app_model.lock().unwrap().state == AppState::Game {
+                let index = hand_model.iter().position(|c| c == card);
+                if let Some(i) = index {
+                    hand_model.remove(i);
+                }
+                let _ = sock_tx.send(Message::PlayCard(card.into()));
             }
         }
     });
@@ -101,53 +105,26 @@ async fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
-    ui.on_add_npc(move || {
-        let _ = sock_tx.send(Message::AddNPC);
+    ui.on_add_npc({
+        let sock_tx = sock_tx.clone();
+        move || {
+            let _ = sock_tx.send(Message::AddNPC);
+        }
     });
 
-    let weak_app = ui.as_weak();
-    tokio::spawn(async move {
-        main_loop(weak_app).await.unwrap();
+    ui.on_bid_further({
+        let sock_tx = sock_tx.clone();
+        move || {
+            let _ = sock_tx.send(Message::Bid(1));
+        }
+    });
+
+    ui.on_pass({
+        let sock_tx = sock_tx.clone();
+        move || {
+            let _ = sock_tx.send(Message::Bid(0));
+        }
     });
 
     ui.run()
-}
-
-async fn main_loop(ui: Weak<MainWindow>) -> Result<(), slint::PlatformError> {
-    let cards_to_add = vec![
-        CardSlint {
-            suit: CardSuitSlint::Heart,
-            rank: CardRankSlint::Seven,
-        },
-        CardSlint {
-            suit: CardSuitSlint::Diamond,
-            rank: CardRankSlint::Eight,
-        },
-        CardSlint {
-            suit: CardSuitSlint::Clubs,
-            rank: CardRankSlint::Nine,
-        },
-        CardSlint {
-            suit: CardSuitSlint::Spade,
-            rank: CardRankSlint::Ace,
-        },
-    ];
-
-    for card in cards_to_add {
-        let ui = ui.clone();
-        let _ = slint::invoke_from_event_loop(move || {
-            if let Some(ui) = ui.upgrade() {
-                let hand_model = ui.get_hand();
-                let vec_model = hand_model
-                    .as_any()
-                    .downcast_ref::<VecModel<CardSlint>>()
-                    .unwrap();
-
-                vec_model.push(card);
-            }
-        });
-        std::thread::sleep(std::time::Duration::from_millis(500));
-    }
-
-    Ok(())
 }

@@ -177,9 +177,15 @@ fn spawn_reciever_thread(
                     });
                 }
                 Message::StartGame => {
+                    app_model.lock().unwrap().state = AppState::Bid;
+                    let _ = slint::invoke_from_event_loop(move || {
+                        ui.unwrap().set_app_state(AppState::Bid);
+                    });
+                }
+                Message::NewBid(bid) => {
                     app_model.lock().unwrap().state = AppState::Game;
                     let _ = slint::invoke_from_event_loop(move || {
-                        ui.unwrap().set_app_state(AppState::Game);
+                        ui.unwrap().set_game_value(format!("{}", bid).into());
                     });
                 }
                 _ => {}

@@ -43,3 +43,38 @@ impl From<Player> for PlayerSlint {
         }
     }
 }
+
+impl From<CardSlint> for Card {
+    fn from(card_slint: CardSlint) -> Self {
+        Self {
+            suit: card_slint.suit.into(),
+            rank: card_slint.rank.into(),
+        }
+    }
+}
+
+impl From<CardSuitSlint> for Suit {
+    fn from(suit: CardSuitSlint) -> Self {
+        match suit {
+            CardSuitSlint::Clubs => Suit::Clubs,
+            CardSuitSlint::Diamond => Suit::Diamonds,
+            CardSuitSlint::Spade => Suit::Spades,
+            CardSuitSlint::Heart => Suit::Hearts,
+        }
+    }
+}
+
+impl From<CardRankSlint> for Rank {
+    fn from(rank: CardRankSlint) -> Self {
+        match rank {
+            CardRankSlint::Ace => Rank::Ace,
+            CardRankSlint::Seven => Rank::Seven,
+            CardRankSlint::Eight => Rank::Eight,
+            CardRankSlint::Nine => Rank::Nine,
+            CardRankSlint::Ten => Rank::Ten,
+            CardRankSlint::Jack => Rank::Jack,
+            CardRankSlint::Queen => Rank::Queen,
+            CardRankSlint::King => Rank::King,
+        }
+    }
+}

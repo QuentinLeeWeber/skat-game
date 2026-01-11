@@ -12,9 +12,12 @@ export component MainWindow inherits Window {
     callback submit_name(name: string);
     callback join_game;
     callback add_npc;
+    callback pass;
+    callback bid_further;
     
-    in-out property<[CardSlint]> hand;
     in property <string> name;
+    in property <string> game_value: "0";
+    in-out property<[CardSlint]> hand;
     in-out property<AppState> app_state;
     in-out property<[PlayerSlint]> players;
 
@@ -32,14 +35,55 @@ export component MainWindow inherits Window {
         transform-origin: {x: self.width / 2, y: self.height / 2};
     }
 
-    if (app_state == AppState.Game) : CardsDisplay { 
+    if (app_state == AppState.Game || app_state == AppState.Bid) : CardsDisplay { 
         hand: hand;
-        play_card(card) => { root.play_card(card); }
+        play_card(card) => { 
+            if(app_state == AppState.Game) {
+                root.play_card(card); 
+            }
+        }
         set_position(from, to) => { root.set_position(from, to); }
     }
 
-    if (app_state == AppState.Game) : TableCardsDisplay {
+    if (app_state == AppState.Game) : TableCardsDisplay { }
 
+    if (app_state == AppState.Game || app_state == AppState.Bid) : Rectangle {
+        Rectangle {
+            height: parent.height * 15%;
+            y: parent.y + parent.height - self.height;
+            background: @radial-gradient(circle, #005400 0%, #003400 100%);
+            Rectangle {
+                y: 0;
+                height: 2px;
+                background: red; 
+            }
+            HorizontalLayout {
+                alignment: center;
+                spacing: 5px;
+                Button { 
+                    text: "Pass";
+                    preferred-height: parent.height * 40%;
+                    clicked => { root.pass() };
+                }
+                Rectangle {
+                    height: parent.height;
+                    width: parent.height;
+                    border-radius: self.height / 2;
+                    background: Palette.background;
+                    Text {
+                        text: root.game_value;
+                        color: Palette.control-foreground;
+                        vertical-alignment: center;
+                        font-size: parent.height * 70%;
+                    }
+                }
+                Button { 
+                    text: "Bid Further";
+                    preferred-height: parent.height * 40%;
+                    clicked => { root.bid_further() };
+                }
+            }
+        }
     }
 
     if (app_state == AppState.Lobby || app_state == AppState.Login) : HomeScreen {
