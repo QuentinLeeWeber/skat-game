@@ -4,6 +4,7 @@ import { CardSuitSlint, CardRankSlint, CardSlint, PlayerSlint, AppState } from "
 import { HomeScreen } from "home-screen.slint";
 import { PlayersDisplay } from "player-display.slint";
 import { PendingGame } from "pending-game-screen.slint";
+import { TableCardsDisplay } from "table-display.slint";
 
 export component MainWindow inherits Window {
     callback play_card(card: CardSlint);
@@ -35,6 +36,10 @@ export component MainWindow inherits Window {
         hand: hand;
         play_card(card) => { root.play_card(card); }
         set_position(from, to) => { root.set_position(from, to); }
+    }
+
+    if (app_state == AppState.Game) : TableCardsDisplay {
+
     }
 
     if (app_state == AppState.Lobby || app_state == AppState.Login) : HomeScreen {

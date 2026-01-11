@@ -8,14 +8,11 @@ pub enum Message {
     ConfirmJoin(u32),
     PlayerJoin(PlayerJoinMessage),
     DrawCard(Card),
-    Hear,
-    Say,
-    SayFurther,
+    AssignBitRole(BitRole),
     Bid(i32),
     NewBid(i32),
     PlayCard(Card),
-    PlayNormalSolo,
-    PlayNormalDuo,
+    AssignGameRole(GameRole),
     YourTurn,
     Trump(Suit),
     GameWon(GameWonMessage),
@@ -25,6 +22,19 @@ pub enum Message {
     PlayerLeave(u32),
     AddNPC,
     StartGame,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum GameRole {
+    NormalSolo,
+    NormalDuo,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BitRole {
+    Hear,
+    Say,
+    SayFurther,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

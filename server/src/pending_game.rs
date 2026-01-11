@@ -1,4 +1,4 @@
-use crate::game::Game;
+use crate::game_handle::GameHandle;
 use crate::knows_skat::KnowsSkatRules;
 use proto::*;
 use std::{fmt::Debug, mem, vec};
@@ -12,7 +12,7 @@ pub struct PendingGame {
 }
 
 impl PendingGame {
-    pub async fn add_player(&mut self, player: Box<dyn KnowsSkatRules>) -> Option<Game> {
+    pub async fn add_player(&mut self, player: Box<dyn KnowsSkatRules>) -> Option<GameHandle> {
         println!("player: {} joined Pending Game", player.name());
         match self.player_count {
             0 => {
@@ -83,9 +83,9 @@ impl PendingGame {
         }
     }
 
-    pub fn to_game(&mut self) -> Game {
+    pub fn to_game(&mut self) -> GameHandle {
         self.player_count = 0;
-        Game::new(
+        GameHandle::new(
             mem::take(&mut self.player_1).unwrap(),
             mem::take(&mut self.player_2).unwrap(),
             mem::take(&mut self.player_3).unwrap(),

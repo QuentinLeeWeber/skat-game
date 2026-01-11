@@ -1,6 +1,6 @@
 use crate::knows_skat::player::Player;
 use crate::knows_skat::{KnowsSkatRules, npc::NPC};
-use crate::{game::Game, pending_game::PendingGame};
+use crate::{game_handle::GameHandle, pending_game::PendingGame};
 use proto::*;
 use std::sync::Arc;
 use tokio::net::TcpStream;
@@ -17,7 +17,7 @@ pub enum LobbyCommand {
 
 pub struct Lobby {
     players: Vec<Player>,
-    games: Vec<Game>,
+    games: Vec<GameHandle>,
     pending_game: PendingGame,
     task_handle: JoinHandle<()>,
     cmd_channel: mpsc::Sender<LobbyCommand>,
@@ -121,7 +121,8 @@ impl Lobby {
             let game = self.games.remove(remove_game);
 
             let mut remaining_player: Vec<Player> = game
-                .close()
+                .abort()
+                .await
                 .into_iter()
                 .filter_map(|x| x.into_any().downcast::<Player>().ok().map(|b| *b))
                 .filter(|p| p.id() != id)

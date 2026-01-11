@@ -1,0 +1,20 @@
+export { TableCardsDisplay }
+
+import { CardSlint, CardTextures } from "structs.slint";
+
+component CardDisplay inherits Image {
+    in property <bool> is_spawned;
+    x: is_spawned ? 0 : -200px;
+}
+
+component TableCardsDisplay {
+    in property <[CardSlint]> cards;
+
+    tex := CardTextures {}
+    
+    for card[i] in cards: CardDisplay {
+        source: tex.card_to_image(card);
+        is_spawned: true;
+        y: 100px;
+    }
+}
