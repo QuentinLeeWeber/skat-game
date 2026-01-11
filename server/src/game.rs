@@ -10,7 +10,6 @@ pub struct Game {
     pub player_2: Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>>,
     pub player_3: Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>>,
     cycle_count: i32,
-    playing_player: Option<i32>,
     cards: Vec<Card>,
     game_value: u32,
 }
@@ -26,7 +25,6 @@ impl Game {
             player_2,
             player_3,
             cycle_count: 0,
-            playing_player: None,
             cards: new_shuffled_deck(),
             game_value: 0,
         }
@@ -110,10 +108,10 @@ impl Game {
         }
 
         self.assign_roles().await;
-        self.bid().await;
+        let solo = self.bid().await;
 
-        if self.playing_player.is_some() {
-            self.normal_game().await;
+        if let Some(solo) = solo {
+            self.normal_game(solo).await;
         } else {
             self.loosing_hand().await;
         }
@@ -145,7 +143,8 @@ impl Game {
             .await;
     }
 
-    async fn bid(&mut self) {
+    async fn bid(&mut self) -> Option<i32> {
+        let mut solo = None;
         for i in [0, 2, 1] {
             loop {
                 let val = self
@@ -161,12 +160,13 @@ impl Game {
                     break;
                 } else {
                     self.increase_game_value();
-                    self.playing_player = Some(i);
+                    solo = Some(i);
                     self.broadcast_message(Message::NewBid(self.game_value as i32))
                         .await;
                 }
             }
         }
+        solo
     }
 
     fn increase_game_value(&mut self) {
@@ -175,21 +175,136 @@ impl Game {
             120,
         ];
         let last_index = possible_values.iter().position(|i| *i == self.game_value);
-        self.game_value = *possible_values.get(last_index.unwrap() + 1).unwrap();
+        self.game_value = *possible_values
+            .get(last_index.unwrap() + 1)
+            .unwrap_or_else(|| &120);
     }
 
-    async fn normal_game(&mut self) {}
-
-    async fn broadcast_played_game(&mut self) {
-        todo!()
-        /*for i in 0..3 {
-            let p = self.(i);
-            if i == self.solo {
-                p.send_message(Message::PlayNormalSolo).await;
+    async fn normal_game(&mut self, solo: i32) {
+        for i in 0..3 {
+            let p_arc = self.player_by_id(i);
+            let mut p_lock = p_arc.lock().await;
+            let p = p_lock.as_mut().unwrap();
+            if i == solo {
+                p.send_message(Message::AssignGameRole(GameRole::NormalSolo))
+                    .await;
             } else {
-                p.send_message(Message::PlayNormalDuo).await;
+                p.send_message(Message::AssignGameRole(GameRole::NormalDuo))
+                    .await;
             }
-        }*/
+
+            let mut solo_trick = vec![];
+            let mut duo_trick = vec![];
+
+            //Skat
+            for _ in 0..2 {
+                let msg = Message::DrawCard(self.cards.pop().unwrap());
+                self.player_by_id(solo)
+                    .lock()
+                    .await
+                    .as_mut()
+                    .unwrap()
+                    .send_message(msg)
+                    .await
+            }
+
+            for _ in 0..2 {
+                let card = self
+                    .player_by_id(solo)
+                    .lock()
+                    .await
+                    .as_mut()
+                    .unwrap()
+                    .expect_message_play_card()
+                    .await;
+                solo_trick.push(card);
+            }
+
+            //Get trump
+            let trump = self
+                .player_by_id(solo)
+                .lock()
+                .await
+                .as_mut()
+                .unwrap()
+                .expect_message_trump()
+                .await;
+            self.broadcast_message(Message::Trump(trump.clone())).await;
+
+            let mut last_winner = 0;
+
+            //PLay 10 rounds
+            for _ in 0..10 {
+                let mut current_trick = vec![];
+
+                for current_player in turn_order(last_winner) {
+                    self.player_by_id(current_player as i32)
+                        .lock()
+                        .await
+                        .as_mut()
+                        .unwrap()
+                        .send_message(Message::YourTurn)
+                        .await;
+
+                    let card = self
+                        .player_by_id(current_player as i32)
+                        .lock()
+                        .await
+                        .as_mut()
+                        .unwrap()
+                        .expect_message_play_card()
+                        .await;
+                    current_trick.push((card, current_player));
+                }
+
+                let trick_color = if current_trick
+                    .iter()
+                    .any(|c| &c.0.suit == &trump || c.0.rank == Rank::Jack)
+                {
+                    trump.clone()
+                } else {
+                    current_trick.get(0).unwrap().0.suit.clone()
+                };
+
+                last_winner = current_trick
+                    .iter()
+                    .filter(|c| c.0.suit == trick_color || c.0.rank == Rank::Jack)
+                    .max_by_key(|c| normal_rank_value(&c.0.rank))
+                    .map(|c| c.1)
+                    .unwrap();
+
+                if last_winner == solo as usize {
+                    &mut solo_trick
+                } else {
+                    &mut duo_trick
+                }
+                .append(&mut current_trick.into_iter().map(|c| c.0).collect());
+            }
+
+            //Evaluate Winner
+            let solo_points = evaluate_cards_value(&solo_trick);
+            let duo_points = evaluate_cards_value(&duo_trick);
+            let won_msg = if solo_points > duo_points {
+                Message::GameWon(GameWonMessage {
+                    id: Some(solo as u32),
+                    winner_points: solo_points,
+                    loser_points: duo_points,
+                })
+            } else if solo_points < duo_points {
+                Message::GameWon(GameWonMessage {
+                    id: Some(solo as u32 + 1),
+                    winner_points: duo_points,
+                    loser_points: solo_points,
+                })
+            } else {
+                Message::GameWon(GameWonMessage {
+                    id: None,
+                    winner_points: 60,
+                    loser_points: 60,
+                })
+            };
+            self.broadcast_message(won_msg).await;
+        }
     }
 
     async fn loosing_hand(&mut self) {
@@ -213,121 +328,10 @@ fn new_shuffled_deck() -> Vec<Card> {
     deck
 }
 
-/*
-async fn normal_game(
-    mut players: Vec<Player>,
-    solo: usize,
-    mut skat: Vec<Card>,
-) -> Result<(), Error> {
-    //Broadcast Played Game
-    for i in 0..3 {
-        let p = players.evil_get(i);
-        if i == solo {
-            p.send_message(Message::PlayNormalSolo).await;
-        } else {
-            p.send_message(Message::PlayNormalDuo).await;
-        }
-    }
-
-    let mut solo_trick = vec![];
-    let mut duo_trick = vec![];
-
-    //Skat
-    for _ in 0..2 {
-        let msg = Message::DrawCard(skat.pop().unwrap());
-        players.evil_get(solo).send_message(msg).await
-    }
-
-    for _ in 0..2 {
-        let card = players.evil_get(solo).expect_message_play_card().await;
-        solo_trick.push(card);
-    }
-
-    //Get trump
-    let trump = players.evil_get(solo).expect_message_trump().await;
-    players
-        .broadcast_message(Message::Trump(trump.clone()))
-        .await;
-
-    let mut last_winner = 0;
-
-    //PLay 10 rounds
-    for _ in 0..10 {
-        let mut current_trick = vec![];
-
-        for current_player in turn_order(last_winner) {
-            players
-                .evil_get(current_player)
-                .send_message(Message::YourTurn)
-                .await;
-
-            let card = players
-                .evil_get(current_player)
-                .expect_message_play_card()
-                .await;
-            current_trick.push((card, current_player));
-        }
-
-        let trick_color = if current_trick
-            .iter()
-            .any(|c| &c.0.suit == &trump || c.0.rank == Rank::Jack)
-        {
-            trump.clone()
-        } else {
-            current_trick.get(0).unwrap().0.suit.clone()
-        };
-
-        last_winner = current_trick
-            .iter()
-            .filter(|c| c.0.suit == trick_color || c.0.rank == Rank::Jack)
-            .max_by_key(|c| normal_rank_value(&c.0.rank))
-            .map(|c| c.1)
-            .unwrap();
-
-        if last_winner == solo {
-            &mut solo_trick
-        } else {
-            &mut duo_trick
-        }
-        .append(&mut current_trick.into_iter().map(|c| c.0).collect());
-    }
-
-    //Evaluate Winner
-    let solo_points = evaluate_cards_value(&solo_trick);
-    let duo_points = evaluate_cards_value(&duo_trick);
-    let won_msg = if solo_points > duo_points {
-        Message::GameWon(GameWonMessage {
-            id: Some(solo as u32),
-            winner_points: solo_points,
-            loser_points: duo_points,
-        })
-    } else if solo_points < duo_points {
-        Message::GameWon(GameWonMessage {
-            id: Some(solo as u32 + 1),
-            winner_points: duo_points,
-            loser_points: solo_points,
-        })
-    } else {
-        Message::GameWon(GameWonMessage {
-            id: None,
-            winner_points: 60,
-            loser_points: 60,
-        })
-    };
-    players.broadcast_message(won_msg).await;
-
-    Ok(())
+fn turn_order(start: usize) -> impl Iterator<Item = usize> {
+    (0..3).map(move |i| (i + start) % 3)
 }
 
 fn evaluate_cards_value(cards: &Vec<Card>) -> u32 {
     cards.iter().map(|c| c.rank.value()).sum()
 }
-
-fn evaluate_round_winner(first: Card, second: Card, third: Card) {
-    todo!()
-}
-
-async fn loosing_hand(players: Vec<Player>) -> Result<(), Error> {
-    todo!()
-}
-*/

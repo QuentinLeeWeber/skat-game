@@ -80,7 +80,7 @@ pub fn message_types(attr: TokenStream, item: TokenStream) -> TokenStream {
                                     return inner;
                                 }
                                 eprintln!("warning: player: {:#?} recieved unexpected Message: {:?}", self, message);
-                                ::tokio::time::sleep(::tokio::time::Duration::from_millis(1999)).await;
+                                ::tokio::time::sleep(::tokio::time::Duration::from_millis(1)).await;
                             }
                         })
                     }
@@ -95,7 +95,7 @@ pub fn message_types(attr: TokenStream, item: TokenStream) -> TokenStream {
                                 return;
                             }
                             eprintln!("warning: player: {:#?} recieved unexpected Message: {:?}", self, message);
-                            ::tokio::time::sleep(::tokio::time::Duration::from_millis(1090)).await;
+                            ::tokio::time::sleep(::tokio::time::Duration::from_millis(1)).await;
                         }
                     }
                 }
