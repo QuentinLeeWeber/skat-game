@@ -30,7 +30,7 @@ async fn main() -> Result<(), anyhow::Error> {
     };
 
     let lobby = Lobby::new().await;
-    let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
 
     loop {
         let (stream, addr) = listener.accept().await?;
