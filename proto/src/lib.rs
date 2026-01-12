@@ -15,6 +15,7 @@ pub enum S2CMessage {
     PlayerLeave(u32),
     StartGame,
     SelectTrump,
+    PlayedCard(Card),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]

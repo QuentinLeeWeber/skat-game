@@ -23,9 +23,10 @@ export component MainWindow inherits Window {
     in-out property <bool> my_turn: false;
     in-out property <bool> solo: false;
     in-out property <bool> select_trump: false;
-    in-out property<[CardSlint]> hand;
-    in-out property<AppState> app_state;
-    in-out property<[PlayerSlint]> players;
+    in-out property <[CardSlint]> hand;
+    in-out property <[CardSlint]> table_cards;
+    in-out property <AppState> app_state;
+    in-out property <[PlayerSlint]> players;
 
     Rectangle {
         background: @radial-gradient(circle, #007400 0%, #004400 100%);
@@ -41,6 +42,15 @@ export component MainWindow inherits Window {
         transform-origin: {x: self.width / 2, y: self.height / 2};
     }
 
+    if (app_state == AppState.Game) : HorizontalLayout {
+        alignment: center;
+        TableCardsDisplay { 
+            cards: root.table_cards; 
+            card_width: root.width / 3;
+            y: root.height * 20%;
+        }
+    }
+
     if (app_state == AppState.Game || app_state == AppState.Bid) : CardsDisplay { 
         hand: hand;
         play_card(card) => { 
@@ -50,9 +60,7 @@ export component MainWindow inherits Window {
             }
         }
         set_position(from, to) => { root.set_position(from, to); }
-    }
-
-    if (app_state == AppState.Game) : TableCardsDisplay { }
+    } 
 
     if (app_state == AppState.Game || app_state == AppState.Bid) : Hotbar {
         height: parent.height * 15%;

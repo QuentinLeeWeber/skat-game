@@ -2,19 +2,46 @@ export { TableCardsDisplay }
 
 import { CardSlint, CardTextures } from "structs.slint";
 
-component CardDisplay inherits Image {
+component CardDisplay inherits Rectangle {
     in property <bool> is_spawned;
+    in property <image> source;
     x: is_spawned ? 0 : -200px;
+
+    Rectangle {
+        x: -5px;
+        y: -5px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        height: rect.height;
+    }
+    
+    rect := Rectangle {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: im.height;
+        im := Image {
+            x: 0px;
+            y: 0px;
+            source: root.source;
+            width: parent.width;
+        }
+        border-radius: 10px;
+        clip: true;
+    }
 }
 
 component TableCardsDisplay {
     in property <[CardSlint]> cards;
+    in property <length> card_width;
+    width: card_width;
 
     tex := CardTextures {}
     
     for card[i] in cards: CardDisplay {
         source: tex.card_to_image(card);
         is_spawned: true;
-        y: 100px;
+        x: i * 30px;
+        width: root.card_width;
     }
 }

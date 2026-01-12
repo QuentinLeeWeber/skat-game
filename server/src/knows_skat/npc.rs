@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use macros::message_types;
 use proto::*;
 use std::{collections::VecDeque, fmt};
+use tokio::time::{Duration, sleep};
 
 pub struct NPC {
     id: u32,
@@ -13,11 +14,21 @@ pub struct NPC {
 impl NPC {
     pub fn new(id: u32) -> Self {
         use proto::{Rank::*, Suit::*};
-        let mut msg_stack: VecDeque<C2SMessage> =
-            vec![(Spades, Ace), (Diamonds, Ace), (Clubs, Ace), (Hearts, Ace)]
-                .into_iter()
-                .map(|(suit, rank)| C2SMessage::PlayCard(Card { suit, rank }))
-                .collect();
+        let mut msg_stack: VecDeque<C2SMessage> = vec![
+            (Spades, Ace),
+            (Diamonds, Ace),
+            (Clubs, Ace),
+            (Hearts, Ace),
+            (Hearts, Seven),
+            (Spades, Seven),
+            (Diamonds, Seven),
+            (Clubs, Seven),
+            (Clubs, Jack),
+            (Clubs, Jack),
+        ]
+        .into_iter()
+        .map(|(suit, rank)| C2SMessage::PlayCard(Card { suit, rank }))
+        .collect();
 
         msg_stack.push_front(C2SMessage::Bid(0));
 
@@ -34,6 +45,7 @@ impl KnowsSkatRules for NPC {
     #[message_types(Trump(Suit), PlayCard(Card), Bid(i32))]
     async fn expect_message(&mut self) -> C2SMessage {
         let msg = self.msg_stack.pop_front().unwrap_or_default();
+        sleep(Duration::from_millis(500)).await;
         println!("npc with id: {}: {:?}", self.id, msg);
         msg
     }

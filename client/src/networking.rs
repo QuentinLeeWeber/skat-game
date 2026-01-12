@@ -215,6 +215,22 @@ fn spawn_reciever_thread(
                         ui.unwrap().set_game_trump(suit.into());
                     });
                 }
+                S2CMessage::PlayedCard(card) => {
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(ui) = ui.upgrade() {
+                            let table_cards = ui.get_table_cards();
+                            let vec_model = table_cards
+                                .as_any()
+                                .downcast_ref::<VecModel<CardSlint>>()
+                                .unwrap();
+
+                            if vec_model.iter().count() == 3 {
+                                vec_model.clear();
+                            }
+                            vec_model.push(card.into());
+                        }
+                    });
+                }
                 _ => {}
             }
             sleep(Duration::from_millis(1)).await;

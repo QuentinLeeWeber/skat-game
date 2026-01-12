@@ -271,6 +271,9 @@ impl Game {
                     .unwrap()
                     .expect_message_play_card()
                     .await;
+
+                self.broadcast_message(S2CMessage::PlayedCard(card.clone()))
+                    .await;
                 current_trick.push((card, current_player));
             }
 

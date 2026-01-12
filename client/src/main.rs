@@ -50,6 +50,8 @@ async fn main() -> Result<(), slint::PlatformError> {
     ui.set_hand(ModelRc::from(Rc::clone(&hand_model)));
     let players_model = Rc::new(VecModel::from(Vec::<PlayerSlint>::new()));
     ui.set_players(ModelRc::from(Rc::clone(&players_model)));
+    let table_cards = Rc::new(VecModel::from(Vec::<CardSlint>::new()));
+    ui.set_table_cards(ModelRc::from(Rc::clone(&table_cards)));
 
     let sock_tx = networking::connect_to_server(Arc::clone(&app_model), ui_weak.clone());
 
