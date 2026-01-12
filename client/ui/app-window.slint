@@ -5,6 +5,7 @@ import { HomeScreen } from "home-screen.slint";
 import { PlayersDisplay } from "player-display.slint";
 import { PendingGame } from "pending-game-screen.slint";
 import { TableCardsDisplay } from "table-display.slint";
+import { Hotbar } from "hotbar.slint";
 
 export component MainWindow inherits Window {
     callback play_card(card: CardSlint);
@@ -14,9 +15,14 @@ export component MainWindow inherits Window {
     callback add_npc;
     callback pass;
     callback bid_further;
+    callback selected_trump(suit: CardSuitSlint);
     
     in property <string> name;
     in property <string> game_value: "0";
+    in property <CardSuitSlint> game_trump: CardSuitSlint.none;
+    in-out property <bool> my_turn: false;
+    in-out property <bool> solo: false;
+    in-out property <bool> select_trump: false;
     in-out property<[CardSlint]> hand;
     in-out property<AppState> app_state;
     in-out property<[PlayerSlint]> players;
@@ -38,7 +44,8 @@ export component MainWindow inherits Window {
     if (app_state == AppState.Game || app_state == AppState.Bid) : CardsDisplay { 
         hand: hand;
         play_card(card) => { 
-            if(app_state == AppState.Game) {
+            if(app_state == AppState.Game && my_turn) {
+                my_turn = false;
                 root.play_card(card); 
             }
         }
@@ -47,43 +54,22 @@ export component MainWindow inherits Window {
 
     if (app_state == AppState.Game) : TableCardsDisplay { }
 
-    if (app_state == AppState.Game || app_state == AppState.Bid) : Rectangle {
-        Rectangle {
-            height: parent.height * 15%;
-            y: parent.y + parent.height - self.height;
-            background: @radial-gradient(circle, #005400 0%, #003400 100%);
-            Rectangle {
-                y: 0;
-                height: 2px;
-                background: red; 
-            }
-            HorizontalLayout {
-                alignment: center;
-                spacing: 5px;
-                Button { 
-                    text: "Pass";
-                    preferred-height: parent.height * 40%;
-                    clicked => { root.pass() };
-                }
-                Rectangle {
-                    height: parent.height;
-                    width: parent.height;
-                    border-radius: self.height / 2;
-                    background: Palette.background;
-                    Text {
-                        text: root.game_value;
-                        color: Palette.control-foreground;
-                        vertical-alignment: center;
-                        font-size: parent.height * 70%;
-                    }
-                }
-                Button { 
-                    text: "Bid Further";
-                    preferred-height: parent.height * 40%;
-                    clicked => { root.bid_further() };
-                }
-            }
+    if (app_state == AppState.Game || app_state == AppState.Bid) : Hotbar {
+        height: parent.height * 15%;
+        y: parent.y + parent.height - self.height;
+        pass => {
+            my_turn = false; 
+            root.pass();
         }
+        bid_further => { root.bid_further(); }
+        selected_trump(suit) => { 
+            root.selected_trump(suit); 
+            root.select_trump = false;
+        }
+        app_state: root.app_state;
+        game_value: root.game_value;
+        select_trump: root.select_trump;
+        game_trump: root.game_trump;
     }
 
     if (app_state == AppState.Lobby || app_state == AppState.Login) : HomeScreen {

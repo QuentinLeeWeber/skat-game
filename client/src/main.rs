@@ -126,5 +126,12 @@ async fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    ui.on_selected_trump({
+        let sock_tx = sock_tx.clone();
+        move |suit| {
+            let _ = sock_tx.send(C2SMessage::Trump(suit.into()));
+        }
+    });
+
     ui.run()
 }

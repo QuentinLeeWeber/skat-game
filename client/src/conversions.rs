@@ -60,6 +60,7 @@ impl From<CardSuitSlint> for Suit {
             CardSuitSlint::Diamond => Suit::Diamonds,
             CardSuitSlint::Spade => Suit::Spades,
             CardSuitSlint::Heart => Suit::Hearts,
+            CardSuitSlint::None => unreachable!(),
         }
     }
 }

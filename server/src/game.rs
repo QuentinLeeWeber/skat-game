@@ -192,120 +192,135 @@ impl Game {
                 p.send_message(S2CMessage::AssignGameRole(GameRole::NormalDuo))
                     .await;
             }
+        }
 
-            let mut solo_trick = vec![];
-            let mut duo_trick = vec![];
+        let mut solo_trick = vec![];
+        let mut duo_trick = vec![];
 
-            //Skat
-            for _ in 0..2 {
-                let msg = S2CMessage::DrawCard(self.cards.pop().unwrap());
-                self.player_by_id(solo)
+        //Skat
+        for _ in 0..2 {
+            sleep(Duration::from_millis(750)).await;
+            let msg = S2CMessage::DrawCard(self.cards.pop().unwrap());
+            self.player_by_id(solo)
+                .lock()
+                .await
+                .as_mut()
+                .unwrap()
+                .send_message(msg)
+                .await;
+        }
+
+        for _ in 0..2 {
+            self.player_by_id(solo)
+                .lock()
+                .await
+                .as_mut()
+                .unwrap()
+                .send_message(S2CMessage::YourTurn)
+                .await;
+            let card = self
+                .player_by_id(solo)
+                .lock()
+                .await
+                .as_mut()
+                .unwrap()
+                .expect_message_play_card()
+                .await;
+            solo_trick.push(card);
+        }
+
+        //Get trump
+        self.player_by_id(solo)
+            .lock()
+            .await
+            .as_mut()
+            .unwrap()
+            .send_message(S2CMessage::SelectTrump)
+            .await;
+        let trump = self
+            .player_by_id(solo)
+            .lock()
+            .await
+            .as_mut()
+            .unwrap()
+            .expect_message_trump()
+            .await;
+        self.broadcast_message(S2CMessage::Trump(trump.clone()))
+            .await;
+
+        let mut last_winner = 0;
+
+        //PLay 10 rounds
+        for _ in 0..10 {
+            let mut current_trick = vec![];
+
+            for current_player in turn_order(last_winner) {
+                self.player_by_id(current_player as i32)
                     .lock()
                     .await
                     .as_mut()
                     .unwrap()
-                    .send_message(msg)
-                    .await
-            }
+                    .send_message(S2CMessage::YourTurn)
+                    .await;
 
-            for _ in 0..2 {
                 let card = self
-                    .player_by_id(solo)
+                    .player_by_id(current_player as i32)
                     .lock()
                     .await
                     .as_mut()
                     .unwrap()
                     .expect_message_play_card()
                     .await;
-                solo_trick.push(card);
+                current_trick.push((card, current_player));
             }
 
-            //Get trump
-            let trump = self
-                .player_by_id(solo)
-                .lock()
-                .await
-                .as_mut()
-                .unwrap()
-                .expect_message_trump()
-                .await;
-            self.broadcast_message(S2CMessage::Trump(trump.clone()))
-                .await;
-
-            let mut last_winner = 0;
-
-            //PLay 10 rounds
-            for _ in 0..10 {
-                let mut current_trick = vec![];
-
-                for current_player in turn_order(last_winner) {
-                    self.player_by_id(current_player as i32)
-                        .lock()
-                        .await
-                        .as_mut()
-                        .unwrap()
-                        .send_message(S2CMessage::YourTurn)
-                        .await;
-
-                    let card = self
-                        .player_by_id(current_player as i32)
-                        .lock()
-                        .await
-                        .as_mut()
-                        .unwrap()
-                        .expect_message_play_card()
-                        .await;
-                    current_trick.push((card, current_player));
-                }
-
-                let trick_color = if current_trick
-                    .iter()
-                    .any(|c| &c.0.suit == &trump || c.0.rank == Rank::Jack)
-                {
-                    trump.clone()
-                } else {
-                    current_trick.get(0).unwrap().0.suit.clone()
-                };
-
-                last_winner = current_trick
-                    .iter()
-                    .filter(|c| c.0.suit == trick_color || c.0.rank == Rank::Jack)
-                    .max_by_key(|c| normal_rank_value(&c.0.rank))
-                    .map(|c| c.1)
-                    .unwrap();
-
-                if last_winner == solo as usize {
-                    &mut solo_trick
-                } else {
-                    &mut duo_trick
-                }
-                .append(&mut current_trick.into_iter().map(|c| c.0).collect());
-            }
-
-            //Evaluate Winner
-            let solo_points = evaluate_cards_value(&solo_trick);
-            let duo_points = evaluate_cards_value(&duo_trick);
-            let won_msg = if solo_points > duo_points {
-                S2CMessage::GameWon(GameWonMessage {
-                    id: Some(solo as u32),
-                    winner_points: solo_points,
-                    loser_points: duo_points,
-                })
-            } else if solo_points < duo_points {
-                S2CMessage::GameWon(GameWonMessage {
-                    id: Some(solo as u32 + 1),
-                    winner_points: duo_points,
-                    loser_points: solo_points,
-                })
+            let trick_color = if current_trick
+                .iter()
+                .any(|c| &c.0.suit == &trump || c.0.rank == Rank::Jack)
+            {
+                trump.clone()
             } else {
-                S2CMessage::GameWon(GameWonMessage {
-                    id: None,
-                    winner_points: 60,
-                    loser_points: 60,
-                })
+                current_trick.get(0).unwrap().0.suit.clone()
             };
-            self.broadcast_message(won_msg).await;
+
+            last_winner = current_trick
+                .iter()
+                .filter(|c| c.0.suit == trick_color || c.0.rank == Rank::Jack)
+                .max_by_key(|c| normal_rank_value(&c.0.rank))
+                .map(|c| c.1)
+                .unwrap();
+
+            if last_winner == solo as usize {
+                &mut solo_trick
+            } else {
+                &mut duo_trick
+            }
+            .append(&mut current_trick.into_iter().map(|c| c.0).collect());
         }
+
+        //Evaluate Winner
+        let solo_points = evaluate_cards_value(&solo_trick);
+        let duo_points = evaluate_cards_value(&duo_trick);
+        let won_msg = if solo_points > duo_points {
+            S2CMessage::GameWon(GameWonMessage {
+                id: Some(solo as u32),
+                winner_points: solo_points,
+                loser_points: duo_points,
+            })
+        } else if solo_points < duo_points {
+            S2CMessage::GameWon(GameWonMessage {
+                id: Some(solo as u32 + 1),
+                winner_points: duo_points,
+                loser_points: solo_points,
+            })
+        } else {
+            S2CMessage::GameWon(GameWonMessage {
+                id: None,
+                winner_points: 60,
+                loser_points: 60,
+            })
+        };
+        self.broadcast_message(won_msg).await;
     }
 
     async fn loosing_hand(&mut self) {

@@ -14,6 +14,7 @@ pub enum S2CMessage {
     BackToLobby,
     PlayerLeave(u32),
     StartGame,
+    SelectTrump,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]

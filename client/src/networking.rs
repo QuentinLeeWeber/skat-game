@@ -72,7 +72,9 @@ fn spawn_sender_thread(
                 .unwrap();
 
             if let Ok(msg) = msg {
-                println!("sending Message: {:?}", msg);
+                if !matches!(msg, C2SMessage::KeepAlive(_)) {
+                    println!("sending Message: {:?}", msg);
+                }
                 let mut msg = serde_json::to_string(&msg).unwrap();
                 msg.push('\n');
                 match writer.write_all(&msg.as_bytes()).await {
@@ -183,9 +185,34 @@ fn spawn_reciever_thread(
                     });
                 }
                 S2CMessage::NewBid(bid) => {
-                    app_model.lock().unwrap().state = AppState::Game;
                     let _ = slint::invoke_from_event_loop(move || {
                         ui.unwrap().set_game_value(format!("{}", bid).into());
+                    });
+                }
+                S2CMessage::AssignGameRole(role) => {
+                    app_model.lock().unwrap().state = AppState::Game;
+                    let solo = match role {
+                        GameRole::NormalDuo => false,
+                        GameRole::NormalSolo => true,
+                    };
+                    let _ = slint::invoke_from_event_loop(move || {
+                        ui.unwrap().set_app_state(AppState::Game);
+                        ui.unwrap().set_solo(solo);
+                    });
+                }
+                S2CMessage::YourTurn => {
+                    let _ = slint::invoke_from_event_loop(move || {
+                        ui.unwrap().set_my_turn(true);
+                    });
+                }
+                S2CMessage::SelectTrump => {
+                    let _ = slint::invoke_from_event_loop(move || {
+                        ui.unwrap().set_select_trump(true);
+                    });
+                }
+                S2CMessage::Trump(suit) => {
+                    let _ = slint::invoke_from_event_loop(move || {
+                        ui.unwrap().set_game_trump(suit.into());
                     });
                 }
                 _ => {}
