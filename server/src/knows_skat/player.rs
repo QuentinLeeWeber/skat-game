@@ -18,7 +18,7 @@ pub struct Player {
     pub name: String,
     tcp_writer: tcp::OwnedWriteHalf,
     ip_addr: String,
-    game_messages: mpsc::Receiver<Message>,
+    game_messages: mpsc::Receiver<C2SMessage>,
     network_handle: JoinHandle<()>,
     keep_alive_handle: JoinHandle<()>,
     lobby_cmd_cnl: mpsc::Sender<LobbyCommand>,
@@ -44,11 +44,11 @@ impl Drop for Player {
 #[async_trait]
 impl KnowsSkatRules for Player {
     #[message_types(Trump(Suit), PlayCard(Card), Bid(i32))]
-    async fn expect_message(&mut self) -> Message {
+    async fn expect_message(&mut self) -> C2SMessage {
         self.read_message().await
     }
 
-    async fn send_message(&mut self, msg: Message) {
+    async fn send_message(&mut self, msg: S2CMessage) {
         println!("sending message: {:?}, to Player: {}", msg, self.name);
         let mut serialized = serde_json::to_string(&msg).unwrap();
         serialized.push('\n');
@@ -83,7 +83,7 @@ impl Player {
     ) -> Self {
         let (tcp_reader, tcp_writer) = TcpStream::into_split(tcp_stream);
 
-        let (game_messages_tx, game_messages) = mpsc::channel::<Message>(100);
+        let (game_messages_tx, game_messages) = mpsc::channel::<C2SMessage>(100);
 
         let (network_handle, keep_alive_handle) =
             Self::spawn_network_treads(id, tcp_reader, lobby_cmd_cnl.clone(), game_messages_tx);
@@ -108,7 +108,7 @@ impl Player {
             .unwrap_or_else(|_| unreachable!());
     }
 
-    async fn read_message(&mut self) -> Message {
+    async fn read_message(&mut self) -> C2SMessage {
         match self.game_messages.recv().await {
             Some(msg) => msg,
             None => loop {
@@ -122,7 +122,7 @@ impl Player {
         id: u32,
         tcp_reader: OwnedReadHalf,
         lobby_cmd_cnl: mpsc::Sender<LobbyCommand>,
-        game_messages_tx: mpsc::Sender<Message>,
+        game_messages_tx: mpsc::Sender<C2SMessage>,
     ) -> (JoinHandle<()>, JoinHandle<()>) {
         let mut tcp_reader = BufReader::new(tcp_reader);
         let last_keep_alive = Arc::new(Mutex::new(system_time()));
@@ -140,21 +140,21 @@ impl Player {
                             println!("reading from tcp_stream failed! : {}", e);
                         }
                     }
-                    let msg: Option<Message> = match serde_json::from_str(&buf) {
+                    let msg: Option<C2SMessage> = match serde_json::from_str(&buf) {
                         Ok(msg) => Some(msg),
                         Err(_) => None,
                     };
                     match msg {
-                        Some(Message::KeepAlive(time_stamp)) => {
+                        Some(C2SMessage::KeepAlive(time_stamp)) => {
                             *last_keep_alive.lock().await = time_stamp;
                         }
-                        Some(Message::JoinGame) => {
+                        Some(C2SMessage::JoinGame) => {
                             lobby_cmd_cnl
                                 .send(LobbyCommand::JoinGame { player_id: id })
                                 .await
                                 .unwrap_or_else(|_| unreachable!());
                         }
-                        Some(Message::Login(name)) => {
+                        Some(C2SMessage::Login(name)) => {
                             lobby_cmd_cnl
                                 .send(LobbyCommand::Login {
                                     player_id: id,
@@ -163,7 +163,7 @@ impl Player {
                                 .await
                                 .unwrap_or_else(|_| unreachable!());
                         }
-                        Some(Message::AddNPC) => {
+                        Some(C2SMessage::AddNPC) => {
                             lobby_cmd_cnl
                                 .send(LobbyCommand::AddNPC)
                                 .await

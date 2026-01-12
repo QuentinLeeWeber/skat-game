@@ -129,7 +129,7 @@ impl Lobby {
                 .collect();
 
             remaining_player
-                .broadcast_message(Message::BackToLobby)
+                .broadcast_message(S2CMessage::BackToLobby)
                 .await;
 
             self.players.extend(remaining_player);
@@ -154,7 +154,7 @@ impl Lobby {
             this.player_count - 1
         };
         let mut new_player = Player::new(stream, id, addr.to_string(), cmd_channel);
-        let msg = Message::ConfirmJoin(id);
+        let msg = S2CMessage::ConfirmJoin(id);
         new_player.send_message(msg).await;
 
         this.lock().await.players.push(new_player);
@@ -162,11 +162,11 @@ impl Lobby {
 }
 
 trait VecExt<T> {
-    async fn broadcast_message(&mut self, msg: Message);
+    async fn broadcast_message(&mut self, msg: S2CMessage);
 }
 
 impl VecExt<Player> for Vec<Player> {
-    async fn broadcast_message(&mut self, msg: Message) {
+    async fn broadcast_message(&mut self, msg: S2CMessage) {
         for player in &mut self.iter_mut() {
             player.send_message(msg.clone()).await;
         }

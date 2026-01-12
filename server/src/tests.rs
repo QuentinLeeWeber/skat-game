@@ -32,11 +32,11 @@ async fn default_game_1() {
 
     let mut stream_1 = connect("127.0.0.1:1234".to_string()).await;
     stream_1
-        .send_message(Message::Login("Markus Rühl".into()))
+        .send_message(C2SMessage::Login("Markus Rühl".into()))
         .await;
-    assert_eq!(Message::ConfirmJoin(0), stream_1.read_message().await);
+    assert_eq!(S2CMessage::ConfirmJoin(0), stream_1.read_message().await);
     assert_eq!(
-        Message::PlayerJoin(PlayerJoinMessage {
+        S2CMessage::PlayerJoin(PlayerJoinMessage {
             id: 0,
             name: "Markus Rühl".into()
         }),
@@ -46,43 +46,45 @@ async fn default_game_1() {
     let mut stream_2 = connect("127.0.0.1:1234".to_string()).await;
     sleep(Duration::from_millis(50)).await;
     let mut stream_3 = connect("127.0.0.1:1234".to_string()).await;
-    stream_2.send_message(Message::Login("Elon".into())).await;
+    stream_2
+        .send_message(C2SMessage::Login("Elon".into()))
+        .await;
     sleep(Duration::from_millis(50)).await;
     stream_3
-        .send_message(Message::Login("Mr. Beast".into()))
+        .send_message(C2SMessage::Login("Mr. Beast".into()))
         .await;
-    assert_eq!(Message::ConfirmJoin(1), stream_2.read_message().await);
-    assert_eq!(Message::ConfirmJoin(2), stream_3.read_message().await);
+    assert_eq!(S2CMessage::ConfirmJoin(1), stream_2.read_message().await);
+    assert_eq!(S2CMessage::ConfirmJoin(2), stream_3.read_message().await);
     assert_eq!(
-        Message::PlayerJoin(PlayerJoinMessage {
+        S2CMessage::PlayerJoin(PlayerJoinMessage {
             id: 0,
             name: "Markus Rühl".into()
         }),
         stream_2.read_message().await
     );
     assert_eq!(
-        Message::PlayerJoin(PlayerJoinMessage {
+        S2CMessage::PlayerJoin(PlayerJoinMessage {
             id: 1,
             name: "Elon".into()
         }),
         stream_2.read_message().await
     );
     assert_eq!(
-        Message::PlayerJoin(PlayerJoinMessage {
+        S2CMessage::PlayerJoin(PlayerJoinMessage {
             id: 0,
             name: "Markus Rühl".into()
         }),
         stream_3.read_message().await
     );
     assert_eq!(
-        Message::PlayerJoin(PlayerJoinMessage {
+        S2CMessage::PlayerJoin(PlayerJoinMessage {
             id: 1,
             name: "Elon".into()
         }),
         stream_3.read_message().await
     );
     assert_eq!(
-        Message::PlayerJoin(PlayerJoinMessage {
+        S2CMessage::PlayerJoin(PlayerJoinMessage {
             id: 2,
             name: "Mr. Beast".into()
         }),
@@ -101,7 +103,10 @@ async fn default_game_1() {
     let mut streams = vec![stream_1, stream_2, stream_3];
     for _ in 0..10 {
         for stream in &mut streams {
-            assert!(matches!(stream.read_message().await, Message::DrawCard(_)));
+            assert!(matches!(
+                stream.read_message().await,
+                S2CMessage::DrawCard(_)
+            ));
         }
     }
 }
@@ -111,21 +116,21 @@ async fn connect(ip: String) -> BufReader<TcpStream> {
 }
 
 trait BufReaderExt {
-    async fn send_message(&mut self, msg: Message);
-    async fn read_message(&mut self) -> Message;
+    async fn send_message(&mut self, msg: C2SMessage);
+    async fn read_message(&mut self) -> S2CMessage;
 }
 
 impl BufReaderExt for BufReader<TcpStream> {
-    async fn send_message(&mut self, msg: Message) {
+    async fn send_message(&mut self, msg: C2SMessage) {
         let serialized = serde_json::to_string(&msg).unwrap();
         self.write_all(&serialized.as_bytes()).await.unwrap();
         self.write_all("\n".as_bytes()).await.unwrap();
     }
 
-    async fn read_message(&mut self) -> Message {
+    async fn read_message(&mut self) -> S2CMessage {
         let mut buf = String::new();
         let _ = self.read_line(&mut buf).await.unwrap();
-        let msg: Message = serde_json::from_str(&buf).unwrap();
+        let msg: S2CMessage = serde_json::from_str(&buf).unwrap();
         msg
     }
 }

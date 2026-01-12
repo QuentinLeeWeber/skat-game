@@ -66,7 +66,7 @@ impl Game {
         }
     }
 
-    async fn broadcast_message(&mut self, msg: Message) {
+    async fn broadcast_message(&mut self, msg: S2CMessage) {
         self.player_1
             .lock()
             .await
@@ -101,7 +101,7 @@ impl Game {
                     .await
                     .as_mut()
                     .unwrap()
-                    .send_message(Message::DrawCard(card.clone()))
+                    .send_message(S2CMessage::DrawCard(card.clone()))
                     .await;
             }
             sleep(Duration::from_millis(100)).await
@@ -123,7 +123,7 @@ impl Game {
             .await
             .as_mut()
             .unwrap()
-            .send_message(Message::AssignBidRole(BidRole::Hear))
+            .send_message(S2CMessage::AssignBidRole(BidRole::Hear))
             .await;
 
         self.next_player()
@@ -131,7 +131,7 @@ impl Game {
             .await
             .as_mut()
             .unwrap()
-            .send_message(Message::AssignBidRole(BidRole::Say))
+            .send_message(S2CMessage::AssignBidRole(BidRole::Say))
             .await;
 
         self.next_player()
@@ -139,7 +139,7 @@ impl Game {
             .await
             .as_mut()
             .unwrap()
-            .send_message(Message::AssignBidRole(BidRole::SayFurther))
+            .send_message(S2CMessage::AssignBidRole(BidRole::SayFurther))
             .await;
     }
 
@@ -161,7 +161,7 @@ impl Game {
                 } else {
                     self.increase_game_value();
                     solo = Some(i);
-                    self.broadcast_message(Message::NewBid(self.game_value as i32))
+                    self.broadcast_message(S2CMessage::NewBid(self.game_value as i32))
                         .await;
                 }
             }
@@ -186,10 +186,10 @@ impl Game {
             let mut p_lock = p_arc.lock().await;
             let p = p_lock.as_mut().unwrap();
             if i == solo {
-                p.send_message(Message::AssignGameRole(GameRole::NormalSolo))
+                p.send_message(S2CMessage::AssignGameRole(GameRole::NormalSolo))
                     .await;
             } else {
-                p.send_message(Message::AssignGameRole(GameRole::NormalDuo))
+                p.send_message(S2CMessage::AssignGameRole(GameRole::NormalDuo))
                     .await;
             }
 
@@ -198,7 +198,7 @@ impl Game {
 
             //Skat
             for _ in 0..2 {
-                let msg = Message::DrawCard(self.cards.pop().unwrap());
+                let msg = S2CMessage::DrawCard(self.cards.pop().unwrap());
                 self.player_by_id(solo)
                     .lock()
                     .await
@@ -229,7 +229,8 @@ impl Game {
                 .unwrap()
                 .expect_message_trump()
                 .await;
-            self.broadcast_message(Message::Trump(trump.clone())).await;
+            self.broadcast_message(S2CMessage::Trump(trump.clone()))
+                .await;
 
             let mut last_winner = 0;
 
@@ -243,7 +244,7 @@ impl Game {
                         .await
                         .as_mut()
                         .unwrap()
-                        .send_message(Message::YourTurn)
+                        .send_message(S2CMessage::YourTurn)
                         .await;
 
                     let card = self
@@ -285,19 +286,19 @@ impl Game {
             let solo_points = evaluate_cards_value(&solo_trick);
             let duo_points = evaluate_cards_value(&duo_trick);
             let won_msg = if solo_points > duo_points {
-                Message::GameWon(GameWonMessage {
+                S2CMessage::GameWon(GameWonMessage {
                     id: Some(solo as u32),
                     winner_points: solo_points,
                     loser_points: duo_points,
                 })
             } else if solo_points < duo_points {
-                Message::GameWon(GameWonMessage {
+                S2CMessage::GameWon(GameWonMessage {
                     id: Some(solo as u32 + 1),
                     winner_points: duo_points,
                     loser_points: solo_points,
                 })
             } else {
-                Message::GameWon(GameWonMessage {
+                S2CMessage::GameWon(GameWonMessage {
                     id: None,
                     winner_points: 60,
                     loser_points: 60,

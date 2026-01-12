@@ -31,7 +31,7 @@ impl PendingGame {
             .into_iter()
             .flat_map(|p| p)
             .map(|player| {
-                Message::PlayerJoin(PlayerJoinMessage {
+                S2CMessage::PlayerJoin(PlayerJoinMessage {
                     id: player.id(),
                     name: player.name(),
                 })
@@ -45,7 +45,7 @@ impl PendingGame {
 
         if self.player_count == 3 {
             println!("pending game full: starting new game!");
-            self.broadcast_message(Message::StartGame).await;
+            self.broadcast_message(S2CMessage::StartGame).await;
             Some(self.to_game())
         } else {
             None
@@ -75,7 +75,7 @@ impl PendingGame {
                 removed = true;
             }
         }
-        self.broadcast_message(Message::PlayerLeave(id)).await;
+        self.broadcast_message(S2CMessage::PlayerLeave(id)).await;
         if removed {
             self.player_count -= 1;
             println!("removed player with id: {} from pending game", id);
@@ -92,7 +92,7 @@ impl PendingGame {
         )
     }
 
-    async fn broadcast_message(&mut self, msg: Message) {
+    async fn broadcast_message(&mut self, msg: S2CMessage) {
         if let Some(p) = &mut self.player_1 {
             p.send_message(msg.clone()).await;
         }

@@ -1,27 +1,32 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum Message {
-    #[default]
-    None,
-    Login(String),
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum S2CMessage {
     ConfirmJoin(u32),
     PlayerJoin(PlayerJoinMessage),
     DrawCard(Card),
     AssignBidRole(BidRole),
-    Bid(i32),
     NewBid(i32),
-    PlayCard(Card),
     AssignGameRole(GameRole),
     YourTurn,
     Trump(Suit),
     GameWon(GameWonMessage),
-    KeepAlive(u128),
     BackToLobby,
-    JoinGame,
     PlayerLeave(u32),
-    AddNPC,
     StartGame,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum C2SMessage {
+    #[default]
+    None,
+    Login(String),
+    Bid(i32),
+    PlayCard(Card),
+    KeepAlive(u128),
+    AddNPC,
+    JoinGame,
+    Trump(Suit),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

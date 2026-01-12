@@ -1,4 +1,4 @@
-use crate::Message;
+use crate::C2SMessage;
 use async_trait::async_trait;
 use macros::message_types_trait;
 use proto::*;
@@ -11,8 +11,8 @@ pub mod player;
 #[async_trait]
 pub trait KnowsSkatRules: Debug + Send + Any {
     #[message_types_trait(Trump(Suit), PlayCard(Card), Bid(i32))]
-    async fn expect_message(&mut self) -> Message;
-    async fn send_message(&mut self, msg: Message);
+    async fn expect_message(&mut self) -> C2SMessage;
+    async fn send_message(&mut self, msg: S2CMessage);
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
     fn name(&self) -> String;
     fn id(&self) -> u32;

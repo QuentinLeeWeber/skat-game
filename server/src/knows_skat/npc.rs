@@ -7,19 +7,19 @@ use std::{collections::VecDeque, fmt};
 pub struct NPC {
     id: u32,
     name: String,
-    msg_stack: VecDeque<Message>,
+    msg_stack: VecDeque<C2SMessage>,
 }
 
 impl NPC {
     pub fn new(id: u32) -> Self {
         use proto::{Rank::*, Suit::*};
-        let mut msg_stack: VecDeque<Message> =
+        let mut msg_stack: VecDeque<C2SMessage> =
             vec![(Spades, Ace), (Diamonds, Ace), (Clubs, Ace), (Hearts, Ace)]
                 .into_iter()
-                .map(|(suit, rank)| Message::PlayCard(Card { suit, rank }))
+                .map(|(suit, rank)| C2SMessage::PlayCard(Card { suit, rank }))
                 .collect();
 
-        msg_stack.push_front(Message::Bid(0));
+        msg_stack.push_front(C2SMessage::Bid(0));
 
         Self {
             id,
@@ -32,13 +32,13 @@ impl NPC {
 #[async_trait]
 impl KnowsSkatRules for NPC {
     #[message_types(Trump(Suit), PlayCard(Card), Bid(i32))]
-    async fn expect_message(&mut self) -> Message {
+    async fn expect_message(&mut self) -> C2SMessage {
         let msg = self.msg_stack.pop_front().unwrap_or_default();
         println!("npc with id: {}: {:?}", self.id, msg);
         msg
     }
 
-    async fn send_message(&mut self, _msg: Message) {}
+    async fn send_message(&mut self, _msg: S2CMessage) {}
 
     fn name(&self) -> String {
         self.name.clone()

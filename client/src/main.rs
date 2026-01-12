@@ -64,7 +64,7 @@ async fn main() -> Result<(), slint::PlatformError> {
                 if let Some(i) = index {
                     hand_model.remove(i);
                 }
-                let _ = sock_tx.send(Message::PlayCard(card.into()));
+                let _ = sock_tx.send(C2SMessage::PlayCard(card.into()));
             }
         }
     });
@@ -93,7 +93,7 @@ async fn main() -> Result<(), slint::PlatformError> {
                 ui.set_name(name.clone().into());
                 ui.set_app_state(AppState::Lobby);
 
-                let _ = sock_tx.send(Message::Login(name.into()));
+                let _ = sock_tx.send(C2SMessage::Login(name.into()));
             }
         }
     });
@@ -101,28 +101,28 @@ async fn main() -> Result<(), slint::PlatformError> {
     ui.on_join_game({
         let sock_tx = sock_tx.clone();
         move || {
-            let _ = sock_tx.send(Message::JoinGame);
+            let _ = sock_tx.send(C2SMessage::JoinGame);
         }
     });
 
     ui.on_add_npc({
         let sock_tx = sock_tx.clone();
         move || {
-            let _ = sock_tx.send(Message::AddNPC);
+            let _ = sock_tx.send(C2SMessage::AddNPC);
         }
     });
 
     ui.on_bid_further({
         let sock_tx = sock_tx.clone();
         move || {
-            let _ = sock_tx.send(Message::Bid(1));
+            let _ = sock_tx.send(C2SMessage::Bid(1));
         }
     });
 
     ui.on_pass({
         let sock_tx = sock_tx.clone();
         move || {
-            let _ = sock_tx.send(Message::Bid(0));
+            let _ = sock_tx.send(C2SMessage::Bid(0));
         }
     });
 

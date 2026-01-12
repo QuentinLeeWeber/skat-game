@@ -13,8 +13,8 @@ const IP_ADDR: &str = "127.0.0.1:6969";
 pub fn connect_to_server(
     app_model: Arc<Mutex<crate::AppModel>>,
     ui: Weak<MainWindow>,
-) -> mpsc::Sender<Message> {
-    let (sock_tx, sock_rx) = mpsc::channel::<Message>();
+) -> mpsc::Sender<C2SMessage> {
+    let (sock_tx, sock_rx) = mpsc::channel::<C2SMessage>();
     let sock_rx = Arc::new(Mutex::new(sock_rx));
 
     let msg_sender = sock_tx.clone();
@@ -46,12 +46,12 @@ pub fn connect_to_server(
     sock_tx
 }
 
-fn spawn_keep_alive_thread(sender: mpsc::Sender<Message>) -> tokio::task::JoinHandle<()> {
+fn spawn_keep_alive_thread(sender: mpsc::Sender<C2SMessage>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         loop {
             let sender = sender.clone();
             tokio::task::spawn_blocking(move || {
-                let _ = sender.send(Message::KeepAlive(system_time()));
+                let _ = sender.send(C2SMessage::KeepAlive(system_time()));
             })
             .await
             .unwrap();
@@ -61,7 +61,7 @@ fn spawn_keep_alive_thread(sender: mpsc::Sender<Message>) -> tokio::task::JoinHa
 }
 
 fn spawn_sender_thread(
-    msg_channel: Arc<Mutex<mpsc::Receiver<Message>>>,
+    msg_channel: Arc<Mutex<mpsc::Receiver<C2SMessage>>>,
     mut writer: OwnedWriteHalf,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
@@ -99,16 +99,16 @@ fn spawn_reciever_thread(
                 Err(_) => break,
                 _ => {}
             };
-            let msg: Message = serde_json::from_str(&buf)
+            let msg: S2CMessage = serde_json::from_str(&buf)
                 .unwrap_or_else(|e| panic!("unreachable deserialize should always work: {}", e));
 
             println!("recieved Message: {:?}", msg);
 
             match msg {
-                Message::ConfirmJoin(id) => {
+                S2CMessage::ConfirmJoin(id) => {
                     app_model.lock().unwrap().player_id = id;
                 }
-                Message::DrawCard(card) => {
+                S2CMessage::DrawCard(card) => {
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = ui.upgrade() {
                             let hand_model = ui.get_hand();
@@ -121,7 +121,7 @@ fn spawn_reciever_thread(
                         }
                     });
                 }
-                Message::PlayerJoin(new_player) => {
+                S2CMessage::PlayerJoin(new_player) => {
                     let mut app_model = app_model.lock().unwrap();
 
                     let is_me = app_model.player_id == new_player.id;
@@ -155,7 +155,7 @@ fn spawn_reciever_thread(
                         });
                     }
                 }
-                Message::PlayerLeave(id) => {
+                S2CMessage::PlayerLeave(id) => {
                     app_model
                         .lock()
                         .unwrap()
@@ -176,13 +176,13 @@ fn spawn_reciever_thread(
                         }
                     });
                 }
-                Message::StartGame => {
+                S2CMessage::StartGame => {
                     app_model.lock().unwrap().state = AppState::Bid;
                     let _ = slint::invoke_from_event_loop(move || {
                         ui.unwrap().set_app_state(AppState::Bid);
                     });
                 }
-                Message::NewBid(bid) => {
+                S2CMessage::NewBid(bid) => {
                     app_model.lock().unwrap().state = AppState::Game;
                     let _ = slint::invoke_from_event_loop(move || {
                         ui.unwrap().set_game_value(format!("{}", bid).into());

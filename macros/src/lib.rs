@@ -76,7 +76,7 @@ pub fn message_types(attr: TokenStream, item: TokenStream) -> TokenStream {
                         Box::pin(async move {
                             loop {
                                 let message = self.expect_message().await;
-                                if let Message::#some_res(inner) = message {
+                                if let C2SMessage::#some_res(inner) = message {
                                     return inner;
                                 }
                                 eprintln!("warning: player: {:#?} recieved unexpected Message: {:?}", self, message);
@@ -91,7 +91,7 @@ pub fn message_types(attr: TokenStream, item: TokenStream) -> TokenStream {
                     async fn #new_fn_name(&mut self) {
                         loop {
                             let message = self.expect_message().await;
-                            if message == Message::#some_res {
+                            if message == C2SMessage::#some_res {
                                 return;
                             }
                             eprintln!("warning: player: {:#?} recieved unexpected Message: {:?}", self, message);
