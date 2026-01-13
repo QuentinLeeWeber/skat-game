@@ -1,13 +1,17 @@
-import { VerticalBox, Button, Palette } from "std-widgets.slint";
 import { CardsDisplay } from "cards-display.slint";
-import { CardSuitSlint, CardRankSlint, CardSlint, PlayerSlint, AppState } from "structs.slint";
+import { CardSuitSlint, CardRankSlint, CardSlint, PlayerSlint, AppState, CardTextures } from "structs.slint";
 import { HomeScreen } from "home-screen.slint";
 import { PlayersDisplay } from "player-display.slint";
 import { PendingGame } from "pending-game-screen.slint";
 import { TableCardsDisplay } from "table-display.slint";
 import { Hotbar } from "hotbar.slint";
+import { LoginWindow } from "login-window.slint";
 
 export component MainWindow inherits Window {
+    height: 1000px;
+    width: 570px; 
+    title: "Skat-Game";
+
     callback play_card(card: CardSlint);
     callback set_position(from: int, to: int);
     callback submit_name(name: string);
@@ -28,9 +32,10 @@ export component MainWindow inherits Window {
     in-out property <AppState> app_state;
     in-out property <[PlayerSlint]> players;
 
-    Rectangle {
-        background: @radial-gradient(circle, #007400 0%, #004400 100%);
-    }
+    Rectangle { background: @radial-gradient(circle, #007400 0%, #004400 100%); }
+
+    //this is image forces the CardTextures to pre-load
+    Image { x: 10000px; source: CardTextures.card_to_image({ suit: CardSuitSlint.clubs, rank: CardRankSlint.Ace }); }
 
     Rectangle {
         height: 100px;
@@ -96,48 +101,9 @@ export component MainWindow inherits Window {
         self-name: root.name;
     }
 
-    property <string> input_text: "";
-
-    if (app_state == AppState.Login) : Rectangle {
+    if (app_state == AppState.Login) : LoginWindow {
         width: 70%;
         height: 40%;
-        border-radius: 10px;
-        border-color: rgb(200, 200, 200);
-        background: Palette.background;
-        drop-shadow-blur:  5px;
-        drop-shadow-color: rgba(0, 0, 0, 0.2);
-        drop-shadow-offset-x: 5px;
-        drop-shadow-offset-y: 5px;
-
-        VerticalBox {
-            x: parent.width * 10%;
-            y: parent.height * 20%;
-            width: 80%;
-            height: 40px;
-
-            input := TextInput { 
-               color: Palette.control-foreground;
-                edited => {
-                    root.input_text = self.text;
-                }
-            }
-        }
-
-        Text {
-            x: parent.width * 10% + 7px;
-            y: parent.height * 20% + 9px;
-            text: "enter name";
-            color: rgb(150, 150, 150);
-            visible: root.input_text == "";
-        }
-
-        Button {
-            x: parent.width * 10%;
-            y: parent.height * 60%;
-            width: 80%;
-            height: 20%;
-            text: "OK";
-            clicked => root.submit_name(input.text);
-        }
+        submit_name(name) => { root.submit_name(name); }
     }
 }

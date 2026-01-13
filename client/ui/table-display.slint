@@ -36,10 +36,8 @@ component TableCardsDisplay {
     in property <length> card_width;
     width: card_width;
 
-    tex := CardTextures {}
-    
     for card[i] in cards: CardDisplay {
-        source: tex.card_to_image(card);
+        source: CardTextures.card_to_image(card);
         is_spawned: true;
         x: i * 30px;
         width: root.card_width;

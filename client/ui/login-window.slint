@@ -1,0 +1,45 @@
+import { VerticalBox, Button, Palette } from "std-widgets.slint";
+
+export component LoginWindow inherits Rectangle {
+    property <string> input_text: "";
+    callback submit_name(name: string);
+
+    border-radius: 10px;
+    border-color: rgb(200, 200, 200);
+    background: Palette.background;
+    drop-shadow-blur:  5px;
+    drop-shadow-color: rgba(0, 0, 0, 0.2);
+    drop-shadow-offset-x: 5px;
+    drop-shadow-offset-y: 5px;
+
+    VerticalBox {
+        x: parent.width * 10%;
+        y: parent.height * 20%;
+        width: 80%;
+        height: 40px;
+
+        input := TextInput { 
+            color: Palette.control-foreground;
+            edited => {
+                root.input_text = self.text;
+            }
+        }
+    }
+
+    Text {
+        x: parent.width * 10% + 7px;
+        y: parent.height * 20% + 9px;
+        text: "enter name";
+        color: rgb(150, 150, 150);
+        visible: root.input_text == "";
+    }
+
+    Button {
+        x: parent.width * 10%;
+        y: parent.height * 60%;
+        width: 80%;
+        height: 20%;
+        text: "OK";
+        clicked => root.submit_name(input.text);
+    }
+}

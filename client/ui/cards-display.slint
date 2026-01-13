@@ -12,15 +12,9 @@ component CardDisplay inherits Rectangle {
     in property <image> icon;
 
     ta := TouchArea {
-        clicked => {
-            play_card(card);
-        }
-        moved => {
-            set_position();
-        }
-        changed pressed => {
-            start_pressed();
-        }
+        clicked => { play_card(card); }
+        moved => { set_position(); }
+        changed pressed => { start_pressed(); }
     }
 
     press: ta.pressed;
@@ -61,22 +55,20 @@ component CardsDisplay inherits Rectangle {
     mouseX: ta.mouse-x;
     mouseY: ta.mouse-y;
 
-    tex := CardTextures {}
-
     for card[i] in hand : CardDisplay {
-        height: 1000px;
+        height: 500px;
         width: parent.width / 3;
 
         //x: self.press ? mouseX : parent.width / 2 - self.width / 2;
         //y: self.press ? mouseY : parent.height / 2; 
 
         x: parent.width / 2 - self.width / 2;
-        y: parent.height / 2; 
+        y: parent.height * 60%; 
         
-        transform-rotation: (i - (hand.length / 2) + 1) * 0.5deg * parent.width / 100px;
-        transform-origin: { x: self.width / 2, y: parent.height * 1.5 };
+        transform-rotation: (i - (hand.length / 2) + 1) * 0.55deg * parent.width / 100px;
+        transform-origin: { x: self.width / 2, y: parent.height * 80% };
 
-        icon: tex.card_to_image(card);
+        icon: CardTextures.card_to_image(card);
 
         play_card => { play_card(card); }
         set_position => { set_position(i, 0)}

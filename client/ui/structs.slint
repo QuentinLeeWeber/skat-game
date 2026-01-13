@@ -12,7 +12,7 @@ export struct PlayerSlint {
     id: int,
 }
 
-export component CardTextures  {
+export global CardTextures  {
     //this is a bit cursed, but slint does not support non static strings as image source
     property <[image]> card_images: [
         @image-url("textures/clubs_seven.png"),
