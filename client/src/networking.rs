@@ -1,4 +1,4 @@
-use crate::{AppState, CardSlint, MainWindow, Player, PlayerSlint};
+use crate::app::{AppModel, AppState, CardSlint, MainWindow, Player, PlayerSlint};
 use proto::*;
 use slint::{Model, VecModel, Weak};
 use std::sync::mpsc;
@@ -8,10 +8,10 @@ use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::TcpStream;
 use tokio::time::{sleep, Duration};
 
-const IP_ADDR: &str = "127.0.0.1:6969";
+const IP_ADDR: &str = "quentmann.mywire.org:6969";
 
 pub fn connect_to_server(
-    app_model: Arc<Mutex<crate::AppModel>>,
+    app_model: Arc<Mutex<AppModel>>,
     ui: Weak<MainWindow>,
 ) -> mpsc::Sender<C2SMessage> {
     let (sock_tx, sock_rx) = mpsc::channel::<C2SMessage>();
@@ -88,7 +88,7 @@ fn spawn_sender_thread(
 }
 
 fn spawn_reciever_thread(
-    app_model: Arc<Mutex<crate::AppModel>>,
+    app_model: Arc<Mutex<AppModel>>,
     ui: Weak<MainWindow>,
     mut socket: BufReader<OwnedReadHalf>,
 ) -> tokio::task::JoinHandle<()> {
