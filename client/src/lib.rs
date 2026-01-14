@@ -5,13 +5,16 @@ use std::sync::{Arc, Mutex};
 
 slint::include_modules!();
 
+mod conversions;
+mod networking;
+
 #[derive(Clone)]
-pub struct Player {
-    pub id: u32,
-    pub name: String,
+struct Player {
+    id: u32,
+    name: String,
 }
 
-pub struct AppModel {
+struct AppModel {
     pub player_id: u32,
     pub state: AppState,
     pub other_player: Vec<Player>,
@@ -37,7 +40,8 @@ impl AppModel {
     }
 }
 
-pub async fn run() -> Result<(), slint::PlatformError> {
+#[tokio::main]
+pub async fn main() -> Result<(), slint::PlatformError> {
     let ui = MainWindow::new()?;
     let ui_weak = ui.as_weak();
 
@@ -49,7 +53,7 @@ pub async fn run() -> Result<(), slint::PlatformError> {
     let table_cards = Rc::new(VecModel::from(Vec::<CardSlint>::new()));
     ui.set_table_cards(ModelRc::from(Rc::clone(&table_cards)));
 
-    let sock_tx = crate::networking::connect_to_server(Arc::clone(&app_model), ui_weak.clone());
+    let sock_tx = networking::connect_to_server(Arc::clone(&app_model), ui_weak.clone());
 
     ui.on_play_card({
         let hand_model = Rc::clone(&hand_model);
