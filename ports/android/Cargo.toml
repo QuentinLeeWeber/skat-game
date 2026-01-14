@@ -9,3 +9,6 @@ crate-type = ["cdylib"]
 [dependencies]
 client = { path = "../../client/" }
 slint = { version = "1.6", features = ["backend-android-activity-06"] }
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.INTERNET"

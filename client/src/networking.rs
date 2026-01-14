@@ -8,7 +8,7 @@ use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::TcpStream;
 use tokio::time::{sleep, Duration};
 
-const IP_ADDR: &str = "127.0.0.1:6969";
+const IP_ADDR: &str = include_str!("../server.conf");
 
 pub fn connect_to_server(
     app_model: Arc<Mutex<crate::AppModel>>,
@@ -38,7 +38,7 @@ pub fn connect_to_server(
                     reciever_thread.await.unwrap();
                     println!("connection to server lost");
                 }
-                Err(_) => println!("could not connect to server! retry in 1 sec"),
+                Err(e) => println!("could not connect to server: {} retry in 1 sec", e),
             };
             sleep(Duration::from_secs(1)).await;
         }
