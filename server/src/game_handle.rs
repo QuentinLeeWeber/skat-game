@@ -40,7 +40,7 @@ impl GameHandle {
     }
 
     pub fn has_player_by_id(&self, id: u32) -> bool {
-        return self.player_ids.iter().find(|i| **i == id).is_some();
+        self.player_ids.contains(&id)
     }
 
     pub async fn abort(self) -> Vec<Box<dyn KnowsSkatRules>> {

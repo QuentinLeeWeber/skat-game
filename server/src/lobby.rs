@@ -62,8 +62,7 @@ impl Lobby {
                                 let player_pos = this_lobby
                                     .players
                                     .iter()
-                                    .position(|p| p.id == player_id)
-                                    .clone();
+                                    .position(|p| p.id == player_id);
 
                                 if let Some(pos) = player_pos {
                                     let player = this_lobby.players.remove(pos);
@@ -91,8 +90,8 @@ impl Lobby {
                             }
                             LobbyCommand::AddNPC => {
                                 let mut this_lobby = this_lobby.lock().await;
-                                this_lobby.player_count += 1;
                                 let new_id = this_lobby.player_count;
+                                this_lobby.player_count += 1;
                                 if let Some(game) = this_lobby
                                     .pending_game
                                     .add_player(Box::new(NPC::new(new_id)))

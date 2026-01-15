@@ -77,10 +77,7 @@ fn spawn_sender_thread(
                 }
                 let mut msg = serde_json::to_string(&msg).unwrap();
                 msg.push('\n');
-                match writer.write_all(&msg.as_bytes()).await {
-                    Err(_) => break,
-                    _ => {}
-                }
+                if (writer.write_all(msg.as_bytes()).await).is_err() { break }
             }
             sleep(Duration::from_millis(1)).await;
         }
@@ -97,10 +94,7 @@ fn spawn_reciever_thread(
             let ui = ui.clone();
 
             let mut buf = String::new();
-            match socket.read_line(&mut buf).await {
-                Err(_) => break,
-                _ => {}
-            };
+            if (socket.read_line(&mut buf).await).is_err() { break };
             let msg: S2CMessage = serde_json::from_str(&buf)
                 .unwrap_or_else(|e| panic!("unreachable deserialize should always work: {}", e));
 

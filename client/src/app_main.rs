@@ -84,13 +84,13 @@ pub async fn main() -> Result<(), slint::PlatformError> {
         let sock_tx = sock_tx.clone();
 
         move |name| {
-            if name == "" {
+            if name.is_empty() {
                 return;
             }
             let mut app_model = app_model.lock().unwrap();
             app_model.submit_name(name.to_string());
             if let Some(ui) = ui_weak.upgrade() {
-                ui.set_name(name.clone().into());
+                ui.set_name(name.clone());
                 ui.set_app_state(AppState::Lobby);
 
                 let _ = sock_tx.send(C2SMessage::Login(name.into()));

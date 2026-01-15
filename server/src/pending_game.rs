@@ -29,7 +29,7 @@ impl PendingGame {
 
         let msgs = vec![&self.player_1, &self.player_2, &self.player_3]
             .into_iter()
-            .flat_map(|p| p)
+            .flatten()
             .map(|player| {
                 S2CMessage::PlayerJoin(PlayerJoinMessage {
                     id: player.id(),
@@ -54,27 +54,24 @@ impl PendingGame {
 
     pub async fn try_remove_player(&mut self, id: u32) {
         let mut removed = false;
-        if let Some(player) = &self.player_1 {
-            if player.id() == id {
+        if let Some(player) = &self.player_1
+            && player.id() == id {
                 self.player_1 = mem::take(&mut self.player_2);
                 self.player_2 = mem::take(&mut self.player_3);
                 self.player_3 = None;
                 removed = true;
             }
-        }
-        if let Some(player) = &self.player_2 {
-            if player.id() == id {
+        if let Some(player) = &self.player_2
+            && player.id() == id {
                 self.player_2 = mem::take(&mut self.player_3);
                 self.player_3 = None;
                 removed = true;
             }
-        }
-        if let Some(player) = &self.player_3 {
-            if player.id() == id {
+        if let Some(player) = &self.player_3
+            && player.id() == id {
                 self.player_3 = None;
                 removed = true;
             }
-        }
         self.broadcast_message(S2CMessage::PlayerLeave(id)).await;
         if removed {
             self.player_count -= 1;

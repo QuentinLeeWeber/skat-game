@@ -170,14 +170,12 @@ impl Game {
     }
 
     fn increase_game_value(&mut self) {
-        let possible_values = vec![
-            0, 18, 20, 22, 23, 24, 27, 30, 33, 35, 36, 40, 44, 45, 46, 48, 50, 55, 59, 60, 72, 96,
-            120,
-        ];
+        let possible_values = [0, 18, 20, 22, 23, 24, 27, 30, 33, 35, 36, 40, 44, 45, 46, 48, 50, 55, 59, 60, 72, 96,
+            120];
         let last_index = possible_values.iter().position(|i| *i == self.game_value);
         self.game_value = *possible_values
             .get(last_index.unwrap() + 1)
-            .unwrap_or_else(|| &120);
+            .unwrap_or(&120);
     }
 
     async fn normal_game(&mut self, solo: i32) {
@@ -279,11 +277,11 @@ impl Game {
 
             let trick_color = if current_trick
                 .iter()
-                .any(|c| &c.0.suit == &trump || c.0.rank == Rank::Jack)
+                .any(|c| c.0.suit == trump || c.0.rank == Rank::Jack)
             {
                 trump.clone()
             } else {
-                current_trick.get(0).unwrap().0.suit.clone()
+                current_trick.first().unwrap().0.suit.clone()
             };
 
             last_winner = current_trick

@@ -52,7 +52,7 @@ impl KnowsSkatRules for Player {
         println!("sending message: {:?}, to Player: {}", msg, self.name);
         let mut serialized = serde_json::to_string(&msg).unwrap();
         serialized.push('\n');
-        if let Err(_) = self.tcp_writer.write_all(&serialized.as_bytes()).await {
+        if (self.tcp_writer.write_all(serialized.as_bytes()).await).is_err() {
             println!(
                 "player: {}, failed to send a Message: disconnecting",
                 self.name
@@ -89,10 +89,10 @@ impl Player {
             Self::spawn_network_treads(id, tcp_reader, lobby_cmd_cnl.clone(), game_messages_tx);
 
         Player {
-            id: id as u32,
+            id,
             name: String::from(""),
             tcp_writer,
-            ip_addr: ip_addr,
+            ip_addr,
             game_messages,
             network_handle,
             keep_alive_handle,
@@ -140,10 +140,7 @@ impl Player {
                             println!("reading from tcp_stream failed! : {}", e);
                         }
                     }
-                    let msg: Option<C2SMessage> = match serde_json::from_str(&buf) {
-                        Ok(msg) => Some(msg),
-                        Err(_) => None,
-                    };
+                    let msg: Option<C2SMessage> = serde_json::from_str(&buf).ok();
                     match msg {
                         Some(C2SMessage::KeepAlive(time_stamp)) => {
                             *last_keep_alive.lock().await = time_stamp;
