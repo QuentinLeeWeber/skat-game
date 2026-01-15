@@ -1,4 +1,5 @@
-use crate::{Card, CardRankSlint, CardSlint, CardSuitSlint, Player, PlayerSlint, Rank, Suit};
+use crate::app_main::{CardRankSlint, CardSlint, CardSuitSlint, Player, PlayerSlint};
+use proto::{Card, Rank, Suit};
 
 impl From<Card> for CardSlint {
     fn from(card: Card) -> Self {
