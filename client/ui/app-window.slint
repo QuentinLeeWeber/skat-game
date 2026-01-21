@@ -6,6 +6,7 @@ import { PendingGame } from "pending-game-screen.slint";
 import { TableCardsDisplay } from "table-display.slint";
 import { Hotbar } from "hotbar.slint";
 import { LoginWindow } from "login-window.slint";
+import { GameOverScreen } from "game-over.slint";
 
 export component MainWindow inherits Window {
     height: 1000px;
@@ -20,6 +21,7 @@ export component MainWindow inherits Window {
     callback pass;
     callback bid_further;
     callback selected_trump(suit: CardSuitSlint);
+    callback return_to_lobby;
     
     in property <string> name;
     in property <string> game_value: "0";
@@ -100,6 +102,12 @@ export component MainWindow inherits Window {
         width: max(root.width * 30%, 200px);
         players: root.players;
         self-name: root.name;
+    }
+
+    if (app_state == AppState.GameLoose || app_state == AppState.GameWin || app_state == AppState.GameTie) : GameOverScreen {
+        clicked => { root.return_to_lobby(); }
+        app_state: root.app_state;
+        points: root.points;
     }
 
     if (app_state == AppState.Login) : LoginWindow {

@@ -82,6 +82,7 @@ pub async fn main() -> Result<(), slint::PlatformError> {
     ui.on_submit_name({
         let app_model = Arc::clone(&app_model);
         let sock_tx = sock_tx.clone();
+        let ui_weak = ui_weak.clone();
 
         move |name| {
             if name.is_empty() {
@@ -130,6 +131,27 @@ pub async fn main() -> Result<(), slint::PlatformError> {
         let sock_tx = sock_tx.clone();
         move |suit| {
             let _ = sock_tx.send(C2SMessage::Trump(suit.into()));
+        }
+    });
+
+    ui.on_return_to_lobby({
+        let ui_weak = ui_weak.clone();
+        let app_model = Arc::clone(&app_model);
+        let hand_model = Rc::clone(&hand_model);
+        let players_model = Rc::clone(&players_model);
+        let table_cards = Rc::clone(&table_cards);
+        move || {
+            let mut app_model = app_model.lock().unwrap();
+            app_model.state = AppState::Lobby;
+            app_model.other_player.clear();
+            if let Some(ui) = ui_weak.upgrade() {
+                ui.set_app_state(AppState::Lobby);
+                ui.set_game_trump(CardSuitSlint::None);
+                ui.set_game_value("0".into());
+                hand_model.clear();
+                players_model.clear();
+                table_cards.clear();
+            }
         }
     });
 
