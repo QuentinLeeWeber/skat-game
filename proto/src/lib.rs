@@ -10,7 +10,7 @@ pub enum S2CMessage {
     AssignGameRole(GameRole),
     YourTurn,
     Trump(Suit),
-    GameWon(GameWonMessage),
+    GameOver(GameOverMessage),
     BackToLobby,
     PlayerLeave(u32),
     StartGame,
@@ -45,8 +45,8 @@ pub enum BidRole {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct GameWonMessage {
-    pub id: Option<u32>,
+pub struct GameOverMessage {
+    pub winner_id: Option<u32>,
     pub winner_points: u32,
     pub loser_points: u32,
 }
