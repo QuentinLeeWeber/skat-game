@@ -170,12 +170,12 @@ impl Game {
     }
 
     fn increase_game_value(&mut self) {
-        let possible_values = [0, 18, 20, 22, 23, 24, 27, 30, 33, 35, 36, 40, 44, 45, 46, 48, 50, 55, 59, 60, 72, 96,
-            120];
+        let possible_values = [
+            0, 18, 20, 22, 23, 24, 27, 30, 33, 35, 36, 40, 44, 45, 46, 48, 50, 55, 59, 60, 72, 96,
+            120,
+        ];
         let last_index = possible_values.iter().position(|i| *i == self.game_value);
-        self.game_value = *possible_values
-            .get(last_index.unwrap() + 1)
-            .unwrap_or(&120);
+        self.game_value = *possible_values.get(last_index.unwrap() + 1).unwrap_or(&120);
     }
 
     async fn normal_game(&mut self, solo: i32) {
@@ -303,20 +303,20 @@ impl Game {
         let solo_points = evaluate_cards_value(&solo_trick);
         let duo_points = evaluate_cards_value(&duo_trick);
         let won_msg = if solo_points > duo_points {
-            S2CMessage::GameWon(GameWonMessage {
-                id: Some(solo as u32),
+            S2CMessage::GameOver(GameOverMessage {
+                winner_id: Some(solo as u32),
                 winner_points: solo_points,
                 loser_points: duo_points,
             })
         } else if solo_points < duo_points {
-            S2CMessage::GameWon(GameWonMessage {
-                id: Some(solo as u32 + 1),
+            S2CMessage::GameOver(GameOverMessage {
+                winner_id: Some(solo as u32 + 1),
                 winner_points: duo_points,
                 loser_points: solo_points,
             })
         } else {
-            S2CMessage::GameWon(GameWonMessage {
-                id: None,
+            S2CMessage::GameOver(GameOverMessage {
+                winner_id: None,
                 winner_points: 60,
                 loser_points: 60,
             })

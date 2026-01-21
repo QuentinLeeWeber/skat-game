@@ -77,7 +77,9 @@ fn spawn_sender_thread(
                 }
                 let mut msg = serde_json::to_string(&msg).unwrap();
                 msg.push('\n');
-                if (writer.write_all(msg.as_bytes()).await).is_err() { break }
+                if (writer.write_all(msg.as_bytes()).await).is_err() {
+                    break;
+                }
             }
             sleep(Duration::from_millis(1)).await;
         }
@@ -94,7 +96,9 @@ fn spawn_reciever_thread(
             let ui = ui.clone();
 
             let mut buf = String::new();
-            if (socket.read_line(&mut buf).await).is_err() { break };
+            if (socket.read_line(&mut buf).await).is_err() {
+                break;
+            };
             let msg: S2CMessage = serde_json::from_str(&buf)
                 .unwrap_or_else(|e| panic!("unreachable deserialize should always work: {}", e));
 
@@ -222,6 +226,25 @@ fn spawn_reciever_thread(
                                 vec_model.clear();
                             }
                             vec_model.push(card.into());
+                        }
+                    });
+                }
+                S2CMessage::GameOver(msg) => {
+                    let GameOverMessage {
+                        winner_id,
+                        winner_points,
+                        loser_points,
+                    } = msg;
+                    let player_id = app_model.lock().unwrap().player_id;
+                    let (status, points) = match winner_id {
+                        Some(id) if id == player_id => (AppState::GameWin, winner_points),
+                        Some(_) => (AppState::GameLoose, loser_points),
+                        None => (AppState::GameTie, winner_points),
+                    };
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(ui) = ui.upgrade() {
+                            ui.set_points(points as i32);
+                            ui.set_app_state(status);
                         }
                     });
                 }
