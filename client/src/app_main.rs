@@ -1,5 +1,5 @@
 use crate::networking;
-use proto::*;
+use prelude::*;
 use slint::{Model, ModelRc, VecModel};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};

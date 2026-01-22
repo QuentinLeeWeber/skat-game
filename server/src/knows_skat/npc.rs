@@ -1,7 +1,7 @@
 use crate::knows_skat::KnowsSkatRules;
 use async_trait::async_trait;
 use macros::message_types;
-use proto::*;
+use prelude::*;
 use std::{collections::VecDeque, fmt};
 use tokio::time::{Duration, sleep};
 
@@ -13,7 +13,7 @@ pub struct NPC {
 
 impl NPC {
     pub fn new(id: u32) -> Self {
-        use proto::{Rank::*, Suit::*};
+        use prelude::{Rank::*, Suit::*};
         let mut msg_stack: VecDeque<C2SMessage> = vec![
             (Spades, Ace),
             (Diamonds, Ace),

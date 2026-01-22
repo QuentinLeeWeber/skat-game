@@ -119,8 +119,8 @@ name = "macros"
 version = "0.1.0"
 dependencies = [
  "convert_case",
+ "prelude",
  "proc-macro2",
- "proto",
  "quote",
  "syn",
 ]
@@ -181,19 +181,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "prelude"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9695f8df41bb4f3d222c95a67532365f569318332d03d5f3f67f37b20e6ebdf0"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "proto"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -306,7 +306,7 @@ dependencies = [
  "async-trait",
  "heapless",
  "macros",
- "proto",
+ "prelude",
  "rand",
  "serde_json",
  "tokio",

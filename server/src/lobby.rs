@@ -1,7 +1,7 @@
 use crate::knows_skat::player::Player;
 use crate::knows_skat::{KnowsSkatRules, npc::NPC};
 use crate::{game_handle::GameHandle, pending_game::PendingGame};
-use proto::*;
+use prelude::*;
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::sync::{Mutex, mpsc};
@@ -59,10 +59,8 @@ impl Lobby {
                         match cmd {
                             LobbyCommand::JoinGame { player_id } => {
                                 let mut this_lobby = this_lobby.lock().await;
-                                let player_pos = this_lobby
-                                    .players
-                                    .iter()
-                                    .position(|p| p.id == player_id);
+                                let player_pos =
+                                    this_lobby.players.iter().position(|p| p.id == player_id);
 
                                 if let Some(pos) = player_pos {
                                     let player = this_lobby.players.remove(pos);

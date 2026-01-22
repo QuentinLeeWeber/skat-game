@@ -1,5 +1,5 @@
 use crate::knows_skat::KnowsSkatRules;
-use proto::*;
+use prelude::*;
 use rand::seq::SliceRandom;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -330,7 +330,7 @@ impl Game {
 }
 
 fn new_shuffled_deck() -> Vec<Card> {
-    use proto::{Rank::*, Suit::*};
+    use prelude::{Rank::*, Suit::*};
 
     let mut deck = vec![];
     for suit in [Hearts, Diamonds, Clubs, Spades] {

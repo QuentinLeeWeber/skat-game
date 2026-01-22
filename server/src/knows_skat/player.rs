@@ -2,7 +2,7 @@ use crate::knows_skat::KnowsSkatRules;
 use crate::lobby::LobbyCommand;
 use async_trait::async_trait;
 use macros::message_types;
-use proto::*;
+use prelude::*;
 use std::fmt;
 use std::result::Result::Ok;
 use std::sync::Arc;

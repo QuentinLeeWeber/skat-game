@@ -813,7 +813,7 @@ dependencies = [
 name = "client"
 version = "0.1.0"
 dependencies = [
- "proto",
+ "prelude",
  "serde_json",
  "slint",
  "slint-build",
@@ -3555,6 +3555,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "prelude"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "prettyplease"
 version = "0.2.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3599,13 +3606,6 @@ checksum = "52717f9a02b6965224f95ca2a81e2e0c5c43baacd28ca057577988930b6c3d5b"
 dependencies = [
  "quote",
  "syn",
-]
-
-[[package]]
-name = "proto"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]

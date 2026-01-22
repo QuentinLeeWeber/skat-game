@@ -1,6 +1,6 @@
 use crate::game_handle::GameHandle;
 use crate::knows_skat::KnowsSkatRules;
-use proto::*;
+use prelude::*;
 use std::{fmt::Debug, mem, vec};
 
 #[derive(Default, Debug)]
@@ -55,23 +55,26 @@ impl PendingGame {
     pub async fn try_remove_player(&mut self, id: u32) {
         let mut removed = false;
         if let Some(player) = &self.player_1
-            && player.id() == id {
-                self.player_1 = mem::take(&mut self.player_2);
-                self.player_2 = mem::take(&mut self.player_3);
-                self.player_3 = None;
-                removed = true;
-            }
+            && player.id() == id
+        {
+            self.player_1 = mem::take(&mut self.player_2);
+            self.player_2 = mem::take(&mut self.player_3);
+            self.player_3 = None;
+            removed = true;
+        }
         if let Some(player) = &self.player_2
-            && player.id() == id {
-                self.player_2 = mem::take(&mut self.player_3);
-                self.player_3 = None;
-                removed = true;
-            }
+            && player.id() == id
+        {
+            self.player_2 = mem::take(&mut self.player_3);
+            self.player_3 = None;
+            removed = true;
+        }
         if let Some(player) = &self.player_3
-            && player.id() == id {
-                self.player_3 = None;
-                removed = true;
-            }
+            && player.id() == id
+        {
+            self.player_3 = None;
+            removed = true;
+        }
         self.broadcast_message(S2CMessage::PlayerLeave(id)).await;
         if removed {
             self.player_count -= 1;

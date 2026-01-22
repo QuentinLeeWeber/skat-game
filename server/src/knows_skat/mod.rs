@@ -1,7 +1,7 @@
 use crate::C2SMessage;
 use async_trait::async_trait;
 use macros::message_types_trait;
-use proto::*;
+use prelude::*;
 use std::any::Any;
 use std::fmt::Debug;
 

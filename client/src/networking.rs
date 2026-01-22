@@ -1,5 +1,5 @@
 use crate::app_main::*;
-use proto::*;
+use prelude::*;
 use slint::{Model, VecModel, Weak};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};

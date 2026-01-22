@@ -1,6 +1,6 @@
 use crate::lobby::Lobby;
 use anyhow::Result;
-use proto::*;
+use prelude::*;
 use std::env;
 use std::result::Result::Ok;
 use tokio::net::TcpListener;
