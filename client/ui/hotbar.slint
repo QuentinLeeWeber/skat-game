@@ -23,12 +23,14 @@ export component Hotbar inherits Rectangle {
         
         if (select_trump) : Button { 
             icon: @image-url("textures/diamond_icon.png");
-            icon-size: self.height * 75%;
+            icon-size: self.height * 30%;
+            preferred-height: self.height * 75%;
             clicked => { root.selected_trump(CardSuitSlint.diamond); }
         }
         if (select_trump) : Button { 
             icon: @image-url("textures/hearth_icon.png");
-            icon-size: self.height * 75%;
+            icon-size: self.height * 30%;
+            preferred-height: self.height * 75%;
             clicked => { root.selected_trump(CardSuitSlint.heart); }
         }
         if (app_state == AppState.Bid) : Button { 
@@ -42,10 +44,10 @@ export component Hotbar inherits Rectangle {
             border-radius: self.height / 2;
             background: Palette.background;
             clip: true;
-            if(game_trump == CardSuitSlint.clubs) : Image { height: parent.height; width: parent.width; source: @image-url("textures/clubs_icon.png"); }
-            if(game_trump == CardSuitSlint.diamond) : Image { height: parent.height; width: parent.width; source: @image-url("textures/diamond_icon.png"); }
-            if(game_trump == CardSuitSlint.heart) : Image { height: parent.height; width: parent.width; source: @image-url("textures/hearth_icon.png"); }
-            if(game_trump == CardSuitSlint.spade) : Image { height: parent.height; width: parent.width; source: @image-url("textures/spade_icon.png"); }
+            if(game_trump == CardSuitSlint.clubs) : Image { height: parent.height * 70%; width: parent.width * 70%; source: @image-url("textures/clubs_icon.png"); }
+            if(game_trump == CardSuitSlint.diamond) : Image { height: parent.height * 70%; width: parent.width * 70%; source: @image-url("textures/diamond_icon.png"); }
+            if(game_trump == CardSuitSlint.heart) : Image { height: parent.height * 70%; width: parent.width * 70%; source: @image-url("textures/hearth_icon.png"); }
+            if(game_trump == CardSuitSlint.spade) : Image { height: parent.height * 70%; width: parent.width * 70%; source: @image-url("textures/spade_icon.png"); }
             Text {
                 text: root.game_value;
                 color: Palette.control-foreground;
@@ -60,12 +62,14 @@ export component Hotbar inherits Rectangle {
         }
         if (select_trump) : Button { 
             icon: @image-url("textures/spade_icon.png");
-            icon-size: self.height * 75%;
+            icon-size: self.height * 30%;
+            preferred-height: self.height * 75%;
             clicked => { root.selected_trump(CardSuitSlint.spade); }
         }
         if (select_trump) : Button { 
             icon: @image-url("textures/clubs_icon.png");
-            icon-size: self.height * 75%;
+            icon-size: self.height * 30%;
+            preferred-height: self.height * 75%;
             clicked => { root.selected_trump(CardSuitSlint.clubs); }
         }
     }
