@@ -117,3 +117,174 @@ pub fn system_time() -> u128 {
         .unwrap()
         .as_millis()
 }
+
+pub fn possible_moves(hand: &Vec<Card>, table: &Vec<Card>, trump: &Option<Suit>) -> Vec<Card> {
+    if table.is_empty() {
+        return hand.clone();
+    }
+
+    let leading_suit = &table[0].suit;
+    let leading_rank = &table[0].rank;
+
+    let leading_suit_is_trump = match trump {
+        Some(t) => t == leading_suit,
+        None => leading_rank == &Rank::Jack,
+    };
+
+    if leading_suit_is_trump {
+        dbg!("leading suit is trump");
+        return hand
+            .clone()
+            .into_iter()
+            .filter(|card| match trump {
+                Some(t) => &card.suit == t || &card.rank == &Rank::Jack,
+                None => &card.rank == &Rank::Jack,
+            })
+            .collect();
+    }
+
+    let mut has_leading_suit = false;
+    for card in hand {
+        if &card.suit == leading_suit {
+            has_leading_suit = true;
+            break;
+        }
+    }
+
+    if has_leading_suit {
+        dbg!("has leading suit");
+        hand.into_iter()
+            .filter(|card| &card.suit == leading_suit)
+            .cloned()
+            .collect()
+    } else {
+        dbg!("no leading suit, play any card");
+        hand.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn card(suit: Suit, rank: Rank) -> Card {
+        Card { suit, rank }
+    }
+
+    #[test]
+    fn test_empty_table_returns_all_hand() {
+        let hand = vec![
+            card(Suit::Hearts, Rank::Ace),
+            card(Suit::Clubs, Rank::Seven),
+        ];
+        let table = vec![];
+        let trump = None;
+
+        let moves = possible_moves(&hand, &table, &trump);
+        assert_eq!(moves, hand);
+    }
+
+    #[test]
+    fn test_follow_leading_suit() {
+        let hand = vec![
+            card(Suit::Hearts, Rank::Ace),
+            card(Suit::Clubs, Rank::Seven),
+        ];
+        let table = vec![card(Suit::Hearts, Rank::King)];
+        let trump = None;
+
+        let moves = possible_moves(&hand, &table, &trump);
+        assert_eq!(moves, vec![card(Suit::Hearts, Rank::Ace)]);
+    }
+
+    #[test]
+    fn test_no_leading_suit_all_cards_playable() {
+        let hand = vec![
+            card(Suit::Clubs, Rank::Seven),
+            card(Suit::Diamonds, Rank::Nine),
+        ];
+        let table = vec![card(Suit::Hearts, Rank::King)];
+        let trump = None;
+
+        let moves = possible_moves(&hand, &table, &trump);
+        assert_eq!(moves, hand);
+    }
+
+    #[test]
+    fn test_with_trump() {
+        let hand = vec![
+            card(Suit::Hearts, Rank::Ace),
+            card(Suit::Spades, Rank::Jack),
+        ];
+        let table = vec![card(Suit::Hearts, Rank::Ten)];
+        let trump = Some(Suit::Spades);
+
+        let moves = possible_moves(&hand, &table, &trump);
+
+        assert_eq!(moves, vec![card(Suit::Hearts, Rank::Ace)]);
+    }
+
+    #[test]
+    fn test_with_trump_leading() {
+        let hand = vec![
+            card(Suit::Hearts, Rank::Ace),
+            card(Suit::Spades, Rank::Jack),
+            card(Suit::Spades, Rank::Nine),
+        ];
+        let table = vec![card(Suit::Spades, Rank::Ten)];
+        let trump = Some(Suit::Spades);
+
+        let moves = possible_moves(&hand, &table, &trump);
+
+        assert_eq!(
+            moves,
+            vec![
+                card(Suit::Spades, Rank::Jack),
+                card(Suit::Spades, Rank::Nine)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_with_trump_leading_2() {
+        let hand = vec![
+            card(Suit::Hearts, Rank::Ace),
+            card(Suit::Diamonds, Rank::Jack),
+            card(Suit::Spades, Rank::Nine),
+        ];
+        let table = vec![card(Suit::Spades, Rank::Ten)];
+        let trump = Some(Suit::Spades);
+
+        let moves = possible_moves(&hand, &table, &trump);
+
+        assert_eq!(
+            moves,
+            vec![
+                card(Suit::Diamonds, Rank::Jack),
+                card(Suit::Spades, Rank::Nine)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_with_trump_no_leading_suit() {
+        let hand = vec![
+            card(Suit::Hearts, Rank::Ace),
+            card(Suit::Spades, Rank::Jack),
+            card(Suit::Spades, Rank::Nine),
+        ];
+        let table = vec![card(Suit::Clubs, Rank::Ten)];
+        let trump = Some(Suit::Spades);
+
+        let moves = possible_moves(&hand, &table, &trump);
+
+        assert_eq!(
+            moves,
+            vec![
+                card(Suit::Hearts, Rank::Ace),
+                card(Suit::Spades, Rank::Jack),
+                card(Suit::Spades, Rank::Nine),
+            ]
+        );
+    }
+}

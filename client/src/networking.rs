@@ -209,6 +209,7 @@ fn spawn_reciever_thread(
                     });
                 }
                 S2CMessage::Trump(suit) => {
+                    app_model.lock().unwrap().trump = Some(suit.clone());
                     let _ = slint::invoke_from_event_loop(move || {
                         ui.unwrap().set_game_trump(suit.into());
                     });

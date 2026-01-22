@@ -1,3 +1,4 @@
+use crate::conversions::VecExt;
 use crate::networking;
 use prelude::*;
 use slint::{Model, ModelRc, VecModel};
@@ -16,6 +17,7 @@ pub struct AppModel {
     pub player_id: u32,
     pub state: AppState,
     pub other_player: Vec<Player>,
+    pub trump: Option<Suit>,
     name: Option<String>,
 }
 
@@ -25,6 +27,7 @@ impl AppModel {
             player_id: 0,
             state: AppState::Login,
             other_player: Vec::new(),
+            trump: None,
             name: None,
         }
     }
@@ -55,11 +58,41 @@ pub async fn main() -> Result<(), slint::PlatformError> {
 
     ui.on_play_card({
         let hand_model = Rc::clone(&hand_model);
+        let table_cards = Rc::clone(&table_cards);
         let app_model = Arc::clone(&app_model);
         let sock_tx = sock_tx.clone();
 
         move |card| {
-            if app_model.lock().unwrap().state == AppState::Game {
+            let played_card: Card = { card.clone().into() };
+            let app_lock = app_model.lock().unwrap();
+            dbg!("on play card");
+            //let hand_model_into: VecExt<CardSlint> = (*hand_model).into();
+            let (hand_model_into, table_cards_into) = {
+                let hand_model_into: Vec<Card> = hand_model.iter().map(|c| c.into()).collect();
+
+                //let table_cards_into: VecExt<CardSlint> = (*table_cards).into();
+                let table_cards_into: Vec<Card> = table_cards.iter().map(|c| c.into()).collect();
+                (hand_model_into, table_cards_into)
+            };
+            dbg!("0");
+
+            dbg!(
+                "possible, moves",
+                possible_moves(&hand_model_into, &table_cards_into, &app_lock.trump)
+            );
+
+            dbg!("1");
+
+            if !possible_moves(&hand_model_into, &table_cards_into, &app_lock.trump)
+                .iter()
+                .any(|c| *c == played_card)
+            {
+                println!("return");
+                let _ = sock_tx.send(C2SMessage::KeepAlive(system_time()));
+                return;
+            }
+            dbg!("actually play");
+            if app_lock.state == AppState::Game {
                 let index = hand_model.iter().position(|c| c == card);
                 if let Some(i) = index {
                     hand_model.remove(i);
@@ -144,6 +177,7 @@ pub async fn main() -> Result<(), slint::PlatformError> {
             let mut app_model = app_model.lock().unwrap();
             app_model.state = AppState::Lobby;
             app_model.other_player.clear();
+            app_model.trump = None;
             if let Some(ui) = ui_weak.upgrade() {
                 ui.set_app_state(AppState::Lobby);
                 ui.set_game_trump(CardSuitSlint::None);

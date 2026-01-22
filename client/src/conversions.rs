@@ -1,5 +1,8 @@
+use std::ops::Deref;
+
 use crate::app_main::{CardRankSlint, CardSlint, CardSuitSlint, Player, PlayerSlint};
 use prelude::{Card, Rank, Suit};
+use slint::{Model, VecModel};
 
 impl From<Card> for CardSlint {
     fn from(card: Card) -> Self {
@@ -78,5 +81,24 @@ impl From<CardRankSlint> for Rank {
             CardRankSlint::Queen => Rank::Queen,
             CardRankSlint::King => Rank::King,
         }
+    }
+}
+
+pub struct VecExt<T>(Vec<T>);
+
+impl<T> Deref for VecExt<T> {
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> From<VecModel<T>> for VecExt<T>
+where
+    T: Clone + 'static,
+{
+    fn from(model: VecModel<T>) -> Self {
+        Self(model.iter().map(|item| item).collect())
     }
 }
