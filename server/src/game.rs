@@ -147,6 +147,14 @@ impl Game {
         let mut solo = None;
         for i in [0, 2, 1] {
             loop {
+                self.player_by_id(i)
+                    .lock()
+                    .await
+                    .as_mut()
+                    .unwrap()
+                    .send_message(S2CMessage::YourTurn)
+                    .await;
+
                 let val = self
                     .player_by_id(i)
                     .lock()

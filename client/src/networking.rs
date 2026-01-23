@@ -180,8 +180,10 @@ fn spawn_reciever_thread(
                     app_model.lock().unwrap().state = AppState::Bid;
                     let _ = slint::invoke_from_event_loop(move || {
                         ui.unwrap().set_app_state(AppState::Bid);
+                        ui.unwrap().set_my_turn(false);
                     });
                 }
+                S2CMessage::AssignBidRole(_) => {}
                 S2CMessage::NewBid(bid) => {
                     let _ = slint::invoke_from_event_loop(move || {
                         ui.unwrap().set_game_value(format!("{}", bid).into());
@@ -249,7 +251,12 @@ fn spawn_reciever_thread(
                         }
                     });
                 }
-                _ => {}
+                S2CMessage::BackToLobby => {
+                    app_model.lock().unwrap().state = AppState::Lobby;
+                    let _ = slint::invoke_from_event_loop(move || {
+                        ui.unwrap().set_app_state(AppState::Lobby);
+                    });
+                }
             }
             sleep(Duration::from_millis(1)).await;
         }
