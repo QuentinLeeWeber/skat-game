@@ -30,12 +30,21 @@ pub fn connect_to_server(
                     let (reader, writer) = tokio::net::TcpStream::into_split(tcp_stream);
                     let reader = BufReader::new(reader);
 
+                    if let Some(name) = &app_model.lock().unwrap().name {
+                        let _ = msg_sender.send(C2SMessage::Login(name.into()));
+                    }
+
                     let keep_alive_tread = spawn_keep_alive_thread(msg_sender);
                     let sender_thread = spawn_sender_thread(msg_channel, writer);
-                    let reciever_thread = spawn_reciever_thread(app_model, ui, reader);
-                    keep_alive_tread.await.unwrap();
-                    sender_thread.await.unwrap();
-                    reciever_thread.await.unwrap();
+                    let reciever_thread = spawn_reciever_thread(app_model, ui.clone(), reader);
+                    tokio::select! {
+                        _ = keep_alive_tread => {}
+                        _ = sender_thread => {}
+                        _ = reciever_thread => {}
+                    }
+                    let _ = slint::invoke_from_event_loop(move || {
+                        ui.unwrap().invoke_return_to_lobby();
+                    });
                     println!("connection to server lost");
                 }
                 Err(e) => println!("could not connect to server: {} retry in 1 sec", e),
@@ -252,9 +261,8 @@ fn spawn_reciever_thread(
                     });
                 }
                 S2CMessage::BackToLobby => {
-                    app_model.lock().unwrap().state = AppState::Lobby;
                     let _ = slint::invoke_from_event_loop(move || {
-                        ui.unwrap().set_app_state(AppState::Lobby);
+                        ui.unwrap().invoke_return_to_lobby();
                     });
                 }
             }

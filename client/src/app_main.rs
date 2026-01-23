@@ -17,7 +17,7 @@ pub struct AppModel {
     pub state: AppState,
     pub other_player: Vec<Player>,
     pub trump: Option<Suit>,
-    name: Option<String>,
+    pub name: Option<String>,
 }
 
 impl AppModel {
