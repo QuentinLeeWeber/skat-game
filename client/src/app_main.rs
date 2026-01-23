@@ -1,4 +1,3 @@
-use crate::conversions::VecExt;
 use crate::networking;
 use prelude::*;
 use slint::{Model, ModelRc, VecModel};
@@ -61,41 +60,28 @@ pub async fn main() -> Result<(), slint::PlatformError> {
         let table_cards = Rc::clone(&table_cards);
         let app_model = Arc::clone(&app_model);
         let sock_tx = sock_tx.clone();
+        let ui_weak = ui_weak.clone();
 
         move |card| {
             let played_card: Card = { card.clone().into() };
             let app_lock = app_model.lock().unwrap();
-            dbg!("on play card");
-            //let hand_model_into: VecExt<CardSlint> = (*hand_model).into();
-            let (hand_model_into, table_cards_into) = {
-                let hand_model_into: Vec<Card> = hand_model.iter().map(|c| c.into()).collect();
-
-                //let table_cards_into: VecExt<CardSlint> = (*table_cards).into();
-                let table_cards_into: Vec<Card> = table_cards.iter().map(|c| c.into()).collect();
-                (hand_model_into, table_cards_into)
-            };
-            dbg!("0");
-
-            dbg!(
-                "possible, moves",
-                possible_moves(&hand_model_into, &table_cards_into, &app_lock.trump)
-            );
-
-            dbg!("1");
+            let hand_model_into: Vec<Card> = hand_model.iter().map(|c| c.into()).collect();
+            let table_cards_into: Vec<Card> = table_cards.iter().map(|c| c.into()).collect();
 
             if !possible_moves(&hand_model_into, &table_cards_into, &app_lock.trump)
                 .iter()
                 .any(|c| *c == played_card)
             {
-                println!("return");
-                let _ = sock_tx.send(C2SMessage::KeepAlive(system_time()));
                 return;
             }
-            dbg!("actually play");
+
             if app_lock.state == AppState::Game {
                 let index = hand_model.iter().position(|c| c == card);
                 if let Some(i) = index {
                     hand_model.remove(i);
+                }
+                if let Some(ui) = ui_weak.upgrade() {
+                    ui.set_my_turn(false);
                 }
                 let _ = sock_tx.send(C2SMessage::PlayCard(card.into()));
             }

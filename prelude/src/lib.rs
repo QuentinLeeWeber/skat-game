@@ -119,7 +119,7 @@ pub fn system_time() -> u128 {
 }
 
 pub fn possible_moves(hand: &Vec<Card>, table: &Vec<Card>, trump: &Option<Suit>) -> Vec<Card> {
-    if table.is_empty() {
+    if table.is_empty() || table.len() == 3 {
         return hand.clone();
     }
 
@@ -275,6 +275,32 @@ mod tests {
         ];
         let table = vec![card(Suit::Clubs, Rank::Ten)];
         let trump = Some(Suit::Spades);
+
+        let moves = possible_moves(&hand, &table, &trump);
+
+        assert_eq!(
+            moves,
+            vec![
+                card(Suit::Hearts, Rank::Ace),
+                card(Suit::Spades, Rank::Jack),
+                card(Suit::Spades, Rank::Nine),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_full_table() {
+        let hand = vec![
+            card(Suit::Hearts, Rank::Ace),
+            card(Suit::Spades, Rank::Jack),
+            card(Suit::Spades, Rank::Nine),
+        ];
+        let table = vec![
+            card(Suit::Clubs, Rank::Ten),
+            card(Suit::Clubs, Rank::Ten),
+            card(Suit::Clubs, Rank::Ten),
+        ];
+        let trump = None;
 
         let moves = possible_moves(&hand, &table, &trump);
 

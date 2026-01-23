@@ -63,7 +63,6 @@ export component MainWindow inherits Window {
         hand: hand;
         play_card(card) => { 
             if(app_state == AppState.Game && my_turn) {
-                my_turn = false;
                 root.play_card(card); 
             }
         }
