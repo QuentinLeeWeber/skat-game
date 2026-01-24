@@ -94,8 +94,8 @@ impl Game {
 
     pub async fn start(&mut self) {
         for _ in 0..10 {
-            let card = self.cards.pop().unwrap();
             for player in self.all_players().iter() {
+                let card = self.cards.pop().unwrap();
                 player
                     .lock()
                     .await
