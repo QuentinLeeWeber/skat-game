@@ -1,0 +1,46 @@
+import { Palette } from "std-widgets.slint";
+
+export component AlertWindow inherits Rectangle {
+    in-out property <string> alert_msg;
+    property <string> alert_msg_intern;
+    property <length> offset: 500px;
+
+    animate offset {
+        duration: 300ms; 
+    }
+
+    changed alert_msg => { 
+        if (alert_msg != "") { alert_msg_intern = alert_msg; }
+        self.offset = 0; 
+        timer.running = true;
+    }
+    
+    timer := Timer {
+        interval: 3s;
+        running: false;
+        triggered() => {
+            root.offset = 500px;
+            alert_msg = "";
+            self.running = false;
+        }
+    } 
+
+    Rectangle {
+        border-radius: 10px;
+        background: Palette.background;
+        drop-shadow-blur:  5px;
+        drop-shadow-color: rgba(0, 0, 0, 0.2);
+        drop-shadow-offset-x: 5px;
+        drop-shadow-offset-y: 5px;
+        x: root.offset;
+        Text {
+            x: 10px;
+            y: root.height / 2 - self.height / 2;
+            width: parent.width - 10px;
+            text: root.alert_msg_intern;
+            font-size: 20px;
+            color: Palette.control-foreground;
+            wrap: word-wrap;
+        }
+    }
+}

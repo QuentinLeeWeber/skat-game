@@ -44,6 +44,8 @@ pub fn connect_to_server(
                     }
                     let _ = slint::invoke_from_event_loop(move || {
                         ui.unwrap().invoke_return_to_lobby();
+                        ui.unwrap()
+                            .invoke_alert("Connection to Server lost! Return to lobby.".into());
                     });
                     println!("connection to server lost");
                 }
@@ -263,6 +265,9 @@ fn spawn_reciever_thread(
                 S2CMessage::BackToLobby => {
                     let _ = slint::invoke_from_event_loop(move || {
                         ui.unwrap().invoke_return_to_lobby();
+                        ui.unwrap().invoke_alert(
+                            "The lobby was closed, because a player has left it.".into(),
+                        );
                     });
                 }
             }

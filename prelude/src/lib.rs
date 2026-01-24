@@ -132,7 +132,6 @@ pub fn possible_moves(hand: &Vec<Card>, table: &Vec<Card>, trump: &Option<Suit>)
     };
 
     if leading_suit_is_trump {
-        dbg!("leading suit is trump");
         return hand
             .clone()
             .into_iter()
@@ -152,13 +151,11 @@ pub fn possible_moves(hand: &Vec<Card>, table: &Vec<Card>, trump: &Option<Suit>)
     }
 
     if has_leading_suit {
-        dbg!("has leading suit");
         hand.into_iter()
             .filter(|card| &card.suit == leading_suit)
             .cloned()
             .collect()
     } else {
-        dbg!("no leading suit, play any card");
         hand.clone()
     }
 }

@@ -7,6 +7,7 @@ import { TableCardsDisplay } from "table-display.slint";
 import { Hotbar } from "hotbar.slint";
 import { LoginWindow } from "login-window.slint";
 import { GameOverScreen } from "game-over.slint";
+import { AlertWindow } from "alert-window.slint";
 
 export component MainWindow inherits Window {
     height: 1000px;
@@ -22,8 +23,10 @@ export component MainWindow inherits Window {
     callback bid_further;
     callback selected_trump(suit: CardSuitSlint);
     callback return_to_lobby;
+    callback alert(msg: string);
     
     in property <string> name;
+    in property <string> alert_msg;
     in property <string> game_value: "0";
     in property <CardSuitSlint> game_trump: CardSuitSlint.none;
     in property <int> points;
@@ -108,6 +111,14 @@ export component MainWindow inherits Window {
         clicked => { root.return_to_lobby(); }
         app_state: root.app_state;
         points: root.points;
+    }
+
+    AlertWindow {
+        height: 100px;
+        width: 400px;
+        x: root.width - self.width - 10px;
+        y: root.height - self.height - 10px;
+        alert_msg: root.alert_msg;
     }
 
     if (app_state == AppState.Login) : LoginWindow {
