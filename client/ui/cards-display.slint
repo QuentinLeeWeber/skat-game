@@ -13,7 +13,7 @@ component CardDisplay inherits Rectangle {
 
     ta := TouchArea {
         clicked => { play_card(card); }
-        moved => { set_position(); }
+        //moved => { set_position(); }
         changed pressed => { start_pressed(); }
     }
 

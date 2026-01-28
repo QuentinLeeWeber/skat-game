@@ -152,7 +152,7 @@ pub fn possible_moves(hand: &Vec<Card>, table: &Vec<Card>, trump: &Option<Suit>)
 
     if has_leading_suit {
         hand.into_iter()
-            .filter(|card| &card.suit == leading_suit)
+            .filter(|card| &card.suit == leading_suit && card.rank != Rank::Jack)
             .cloned()
             .collect()
     } else {
@@ -166,6 +166,24 @@ mod tests {
 
     fn card(suit: Suit, rank: Rank) -> Card {
         Card { suit, rank }
+    }
+
+    #[test]
+    fn test_no_trump_with_jack() {
+        let hand = vec![
+            card(Suit::Diamonds, Rank::Seven),
+            card(Suit::Clubs, Rank::Nine),
+            card(Suit::Clubs, Rank::Jack),
+        ];
+        let table = vec![card(Suit::Clubs, Rank::King)];
+        let trump = None;
+
+        let moves = possible_moves(&hand, &table, &trump);
+        assert_eq!(moves, vec![card(Suit::Clubs, Rank::Nine)]);
+        assert_ne!(
+            moves,
+            vec![card(Suit::Clubs, Rank::Nine), card(Suit::Clubs, Rank::Jack)]
+        );
     }
 
     #[test]
