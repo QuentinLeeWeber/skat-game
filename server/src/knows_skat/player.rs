@@ -142,8 +142,8 @@ impl Player {
                     }
                     let msg: Option<C2SMessage> = serde_json::from_str(&buf).ok();
                     match msg {
-                        Some(C2SMessage::KeepAlive(time_stamp)) => {
-                            *last_keep_alive.lock().await = time_stamp;
+                        Some(C2SMessage::KeepAlive) => {
+                            *last_keep_alive.lock().await = system_time();
                         }
                         Some(C2SMessage::JoinGame) => {
                             lobby_cmd_cnl

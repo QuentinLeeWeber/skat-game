@@ -25,7 +25,7 @@ pub enum C2SMessage {
     Login(String),
     Bid(i32),
     PlayCard(Card),
-    KeepAlive(u128),
+    KeepAlive,
     AddNPC,
     JoinGame,
     Trump(Suit),

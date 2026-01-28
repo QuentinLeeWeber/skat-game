@@ -62,7 +62,7 @@ fn spawn_keep_alive_thread(sender: mpsc::Sender<C2SMessage>) -> tokio::task::Joi
         loop {
             let sender = sender.clone();
             tokio::task::spawn_blocking(move || {
-                let _ = sender.send(C2SMessage::KeepAlive(system_time()));
+                let _ = sender.send(C2SMessage::KeepAlive);
             })
             .await
             .unwrap();
@@ -83,7 +83,7 @@ fn spawn_sender_thread(
                 .unwrap();
 
             if let Ok(msg) = msg {
-                if !matches!(msg, C2SMessage::KeepAlive(_)) {
+                if !matches!(msg, C2SMessage::KeepAlive) {
                     println!("sending Message: {:?}", msg);
                 }
                 let mut msg = serde_json::to_string(&msg).unwrap();
