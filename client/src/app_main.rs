@@ -175,11 +175,5 @@ pub async fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
-    ui.on_alert(move |msg| {
-        if let Some(ui) = ui_weak.upgrade() {
-            ui.set_alert_msg(msg);
-        }
-    });
-
     ui.run()
 }

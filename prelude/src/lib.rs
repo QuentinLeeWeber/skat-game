@@ -131,23 +131,29 @@ pub fn possible_moves(hand: &Vec<Card>, table: &Vec<Card>, trump: &Option<Suit>)
         None => leading_rank == &Rank::Jack,
     };
 
+    let has_leading_suit = hand
+        .iter()
+        .any(|card| &card.suit == leading_suit && card.rank != Rank::Jack);
+
+    let has_trump = hand.iter().any(|card| {
+        if let Some(trump) = trump {
+            return &card.suit == trump || card.rank == Rank::Jack;
+        }
+        card.rank == Rank::Jack
+    });
+
     if leading_suit_is_trump {
+        if !has_trump {
+            return hand.clone();
+        }
         return hand
             .clone()
             .into_iter()
             .filter(|card| match trump {
-                Some(t) => &card.suit == t || &card.rank == &Rank::Jack,
+                Some(t) => &card.suit == t || card.rank == Rank::Jack,
                 None => &card.rank == &Rank::Jack,
             })
             .collect();
-    }
-
-    let mut has_leading_suit = false;
-    for card in hand {
-        if &card.suit == leading_suit {
-            has_leading_suit = true;
-            break;
-        }
     }
 
     if has_leading_suit {
@@ -166,6 +172,35 @@ mod tests {
 
     fn card(suit: Suit, rank: Rank) -> Card {
         Card { suit, rank }
+    }
+
+    #[test]
+    fn test_specific_1() {
+        let hand = vec![
+            card(Suit::Spades, Rank::Eight),
+            card(Suit::Diamonds, Rank::Jack),
+            card(Suit::Spades, Rank::Nine),
+            card(Suit::Hearts, Rank::King),
+        ];
+        let table = vec![card(Suit::Diamonds, Rank::Seven)];
+        let trump = Some(Suit::Spades);
+
+        let moves = possible_moves(&hand, &table, &trump);
+        assert_eq!(moves, hand);
+    }
+
+    #[test]
+    fn test_specific_2() {
+        let hand = vec![
+            card(Suit::Spades, Rank::Eight),
+            card(Suit::Diamonds, Rank::Queen),
+            card(Suit::Diamonds, Rank::Nine),
+        ];
+        let table = vec![card(Suit::Clubs, Rank::Nine)];
+        let trump = Some(Suit::Clubs);
+
+        let moves = possible_moves(&hand, &table, &trump);
+        assert_eq!(moves, hand);
     }
 
     #[test]

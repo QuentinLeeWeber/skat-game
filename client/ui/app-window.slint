@@ -23,10 +23,10 @@ export component MainWindow inherits Window {
     callback bid_further;
     callback selected_trump(suit: CardSuitSlint);
     callback return_to_lobby;
-    callback alert(msg: string);
+
+    public function alert(msg: string) { alert_window.alert(msg); }
     
     in property <string> name;
-    in property <string> alert_msg;
     in property <string> game_value: "0";
     in property <CardSuitSlint> game_trump: CardSuitSlint.none;
     in property <int> points;
@@ -113,12 +113,11 @@ export component MainWindow inherits Window {
         points: root.points;
     }
 
-    AlertWindow {
+    alert_window := AlertWindow {
         height: 100px;
         width: 400px;
         x: root.width - self.width - 10px;
         y: root.height - self.height - 10px;
-        alert_msg: root.alert_msg;
     }
 
     if (app_state == AppState.Login) : LoginWindow {

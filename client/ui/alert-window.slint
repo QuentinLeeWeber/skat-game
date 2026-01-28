@@ -1,26 +1,23 @@
 import { Palette } from "std-widgets.slint";
 
 export component AlertWindow inherits Rectangle {
-    in-out property <string> alert_msg;
+    property <string> alert_msg;
     property <string> alert_msg_intern;
     property <length> offset: 500px;
 
-    animate offset {
-        duration: 300ms; 
-    }
+    animate offset { duration: 300ms; }
 
-    changed alert_msg => { 
-        if (alert_msg != "") { alert_msg_intern = alert_msg; }
-        self.offset = 0; 
+    public function alert(msg: string) {
+        alert_msg = msg;
         timer.running = true;
-    }
+        self.offset = 0;
+    } 
     
     timer := Timer {
         interval: 3s;
         running: false;
         triggered() => {
             root.offset = 500px;
-            alert_msg = "";
             self.running = false;
         }
     } 
@@ -37,7 +34,7 @@ export component AlertWindow inherits Rectangle {
             x: 10px;
             y: root.height / 2 - self.height / 2;
             width: parent.width - 10px;
-            text: root.alert_msg_intern;
+            text: root.alert_msg;
             font-size: 20px;
             color: Palette.control-foreground;
             wrap: word-wrap;
