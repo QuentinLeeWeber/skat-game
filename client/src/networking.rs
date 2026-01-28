@@ -250,6 +250,7 @@ fn spawn_reciever_thread(
                         loser_points,
                     } = msg;
                     let player_id = app_model.lock().unwrap().player_id;
+                    println!("player_id: {}, winner_id: {:?}", player_id, winner_id);
                     let (status, points) = match winner_id {
                         Some(id) if id == player_id => (AppState::GameWin, winner_points),
                         Some(_) => (AppState::GameLoose, loser_points),

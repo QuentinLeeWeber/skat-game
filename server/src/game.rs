@@ -312,13 +312,20 @@ impl Game {
         let duo_points = evaluate_cards_value(&duo_trick);
         let won_msg = if solo_points > duo_points {
             S2CMessage::GameOver(GameOverMessage {
-                winner_id: Some(solo as u32),
+                winner_id: Some(self.player_by_id(solo).lock().await.as_mut().unwrap().id()),
                 winner_points: solo_points,
                 loser_points: duo_points,
             })
         } else if solo_points < duo_points {
             S2CMessage::GameOver(GameOverMessage {
-                winner_id: Some(solo as u32 + 1),
+                winner_id: Some(
+                    self.player_by_id(solo + 1)
+                        .lock()
+                        .await
+                        .as_mut()
+                        .unwrap()
+                        .id(),
+                ),
                 winner_points: duo_points,
                 loser_points: solo_points,
             })
