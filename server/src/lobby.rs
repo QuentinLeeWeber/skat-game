@@ -56,54 +56,52 @@ impl Lobby {
             async move {
                 loop {
                     if let Some(cmd) = cmd_cnl_rx.recv().await {
-                        match cmd {
-                            LobbyCommand::JoinGame { player_id } => {
-                                let mut this_lobby = this_lobby.lock().await;
-                                let player_pos =
-                                    this_lobby.players.iter().position(|p| p.id == player_id);
-
-                                if let Some(pos) = player_pos {
-                                    let player = this_lobby.players.remove(pos);
-                                    if let Some(game) =
-                                        this_lobby.pending_game.add_player(Box::new(player)).await
-                                    {
-                                        this_lobby.games.push(game);
-                                    }
-                                }
-                            }
-                            LobbyCommand::Disconnect { player_id } => {
-                                this_lobby.lock().await.remove_player(player_id).await;
-                            }
-                            LobbyCommand::Login { player_id, name } => {
-                                println!(
-                                    "player with id: {}, logged in as: \"{}\"",
-                                    player_id, name
-                                );
-                                let mut lobby = this_lobby.lock().await;
-                                let player = lobby.players.iter_mut().find(|p| p.id == player_id);
-
-                                if let Some(player) = player {
-                                    player.name = name;
-                                }
-                            }
-                            LobbyCommand::AddNPC => {
-                                let mut this_lobby = this_lobby.lock().await;
-                                let new_id = this_lobby.player_count;
-                                this_lobby.player_count += 1;
-                                if let Some(game) = this_lobby
-                                    .pending_game
-                                    .add_player(Box::new(NPC::new(new_id)))
-                                    .await
-                                {
-                                    this_lobby.games.push(game);
-                                }
-                            }
-                        }
+                        Self::handle_lobby_cmd(Arc::clone(&this_lobby), cmd).await;
                     }
                     sleep(Duration::from_millis(1)).await;
                 }
             }
         })
+    }
+
+    async fn handle_lobby_cmd(this_lobby: Arc<Mutex<Lobby>>, cmd: LobbyCommand) {
+        match cmd {
+            LobbyCommand::JoinGame { player_id } => {
+                let mut this_lobby = this_lobby.lock().await;
+                let player_pos = this_lobby.players.iter().position(|p| p.id == player_id);
+
+                if let Some(pos) = player_pos {
+                    let player = this_lobby.players.remove(pos);
+                    if let Some(game) = this_lobby.pending_game.add_player(Box::new(player)).await {
+                        this_lobby.games.push(game);
+                    }
+                }
+            }
+            LobbyCommand::Disconnect { player_id } => {
+                this_lobby.lock().await.remove_player(player_id).await;
+            }
+            LobbyCommand::Login { player_id, name } => {
+                println!("player with id: {}, logged in as: \"{}\"", player_id, name);
+                let mut lobby = this_lobby.lock().await;
+                let player = lobby.players.iter_mut().find(|p| p.id == player_id);
+
+                if let Some(player) = player {
+                    player.name = name;
+                }
+            }
+            LobbyCommand::AddNPC => {
+                let mut this_lobby = this_lobby.lock().await;
+                let new_id = this_lobby.player_count;
+                this_lobby.player_count += 1;
+                if let Some(game) = this_lobby
+                    .pending_game
+                    .add_player(Box::new(NPC::new(new_id)))
+                    .await
+                {
+                    this_lobby.games.push(game);
+                }
+            }
+        }
     }
 
     pub async fn remove_player(&mut self, id: u32) {

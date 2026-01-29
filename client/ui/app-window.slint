@@ -13,46 +13,16 @@ export component MainWindow inherits Window {
     height: 1000px;
     width: 570px; 
     title: "Skat-Game";
-
-    callback play_card(card: CardSlint);
-    callback set_position(from: int, to: int);
-    callback submit_name(name: string);
-    callback join_game;
-    callback add_npc;
-    callback pass;
-    callback bid_further;
-    callback selected_trump(suit: CardSuitSlint);
-    callback return_to_lobby;
-
-    public function alert(msg: string) { alert_window.alert(msg); }
     
-    in property <string> name;
-    in property <string> game_value: "0";
-    in property <CardSuitSlint> game_trump: CardSuitSlint.none;
-    in property <int> points;
     in-out property <bool> my_turn: false;
-    in-out property <bool> solo: false;
-    in-out property <bool> select_trump: false;
-    in-out property <[CardSlint]> hand;
-    in-out property <[CardSlint]> table_cards;
     in-out property <AppState> app_state;
-    in-out property <[PlayerSlint]> players;
 
     Rectangle { background: @radial-gradient(circle, #007400 0%, #004400 100%); }
 
     //this is image forces the CardTextures to pre-load
     Image { x: 10000px; source: CardTextures.card_to_image({ suit: CardSuitSlint.clubs, rank: CardRankSlint.Ace }); }
 
-    Rectangle {
-        height: 100px;
-        width: 100px;
-        x: 0;
-        y: 0;
-        background: rgb(255, 0, 0);
-        transform-rotation: 45deg;
-        transform-origin: {x: self.width / 2, y: self.height / 2};
-    }
-
+    in-out property <[CardSlint]> table_cards;
     if (app_state == AppState.Game) : HorizontalLayout {
         alignment: center;
         TableCardsDisplay { 
@@ -62,6 +32,9 @@ export component MainWindow inherits Window {
         }
     }
 
+    in-out property <[CardSlint]> hand;
+    callback set_position(from: int, to: int);
+    callback play_card(card: CardSlint);
     if (app_state == AppState.Game || app_state == AppState.Bid) : CardsDisplay { 
         hand: hand;
         play_card(card) => { 
@@ -72,6 +45,12 @@ export component MainWindow inherits Window {
         set_position(from, to) => { root.set_position(from, to); }
     } 
 
+    in property <string> game_value: "0";
+    in property <CardSuitSlint> game_trump: CardSuitSlint.none;
+    in-out property <bool> select_trump: false;
+    callback pass;
+    callback bid_further;
+    callback selected_trump(suit: CardSuitSlint);
     if (app_state == AppState.Game || app_state == AppState.Bid) : Hotbar {
         height: parent.height * 15%;
         y: parent.y + parent.height - self.height;
@@ -91,14 +70,18 @@ export component MainWindow inherits Window {
         my_turn: root.my_turn;
     }
 
+    callback join_game;
     if (app_state == AppState.Lobby || app_state == AppState.Login) : HomeScreen {
         clicked => { root.join_game(); }
     }
 
+    callback add_npc;
     if (app_state == AppState.PendingGame) : PendingGame {
         add_npc => { root.add_npc(); }
     }
 
+    in property <string> name;
+    in property <[PlayerSlint]> players;
     if (app_state != AppState.Login) : PlayersDisplay {
         x: 0;
         y: 0;
@@ -107,12 +90,15 @@ export component MainWindow inherits Window {
         self-name: root.name;
     }
 
+    in property <int> points;
+    callback return_to_lobby;
     if (app_state == AppState.GameLoose || app_state == AppState.GameWin || app_state == AppState.GameTie) : GameOverScreen {
         clicked => { root.return_to_lobby(); }
         app_state: root.app_state;
         points: root.points;
     }
 
+    public function alert(msg: string) { alert_window.alert(msg); }
     alert_window := AlertWindow {
         height: 100px;
         width: 400px;
@@ -120,6 +106,7 @@ export component MainWindow inherits Window {
         y: root.height - self.height - 10px;
     }
 
+    callback submit_name(name: string);
     if (app_state == AppState.Login) : LoginWindow {
         width: 70%;
         height: 40%;
