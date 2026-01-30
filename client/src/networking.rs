@@ -112,11 +112,17 @@ fn spawn_reciever_thread(
             if (socket.read_line(&mut buf).await).is_err() {
                 break;
             };
-            let msg: S2CMessage = serde_json::from_str(&buf)
-                .unwrap_or_else(|e| unreachable!("deserialize should always work: {}", e));
 
-            println!("recieved Message: {:?}", msg);
-            handle_server_msg(msg, app_model.clone(), ui);
+            match serde_json::from_str(&buf) {
+                Ok(msg) => {
+                    println!("recieved Message: {:?}", msg);
+                    handle_server_msg(msg, app_model.clone(), ui);
+                }
+                Err(e) => {
+                    println!("deserilisation failed: {e}, closing connection!");
+                    break;
+                }
+            }
 
             sleep(Duration::from_millis(1)).await;
         }
