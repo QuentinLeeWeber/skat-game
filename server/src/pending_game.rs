@@ -1,4 +1,4 @@
-use crate::game_handle::GameHandle;
+use crate::game::GameHandle;
 use crate::knows_skat::KnowsSkatRules;
 use prelude::*;
 use std::{fmt::Debug, mem, vec};

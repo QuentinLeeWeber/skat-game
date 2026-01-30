@@ -60,9 +60,9 @@ impl KnowsSkatRules for NPC {
         self.id
     }
 
-    fn into_any(self: Box<Self>) -> Box<dyn std::any::Any> {
+    /*fn into_any(self: Box<Self>) -> Box<dyn std::any::Any> {
         self
-    }
+    }*/
 }
 
 impl fmt::Debug for NPC {

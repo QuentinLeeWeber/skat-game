@@ -11,7 +11,6 @@ mod tests;
 
 //mod client_connection;
 mod game;
-mod game_handle;
 mod knows_skat;
 mod lobby;
 mod pending_game;

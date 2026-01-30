@@ -1,14 +1,43 @@
 use crate::knows_skat::KnowsSkatRules;
 use prelude::*;
 use rand::seq::SliceRandom;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
 use tokio::time::{Duration, sleep};
 
-pub struct Game {
-    pub player_1: Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>>,
-    pub player_2: Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>>,
-    pub player_3: Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>>,
+pub struct GameHandle {
+    pub player_ids: Vec<u32>,
+    handle: JoinHandle<()>,
+}
+
+impl Drop for GameHandle {
+    fn drop(&mut self) {
+        self.handle.abort();
+    }
+}
+
+impl GameHandle {
+    pub fn new(
+        player_1: Box<dyn KnowsSkatRules>,
+        player_2: Box<dyn KnowsSkatRules>,
+        player_3: Box<dyn KnowsSkatRules>,
+    ) -> GameHandle {
+        GameHandle {
+            player_ids: vec![player_1.id(), player_2.id(), player_3.id()],
+            handle: tokio::spawn(
+                async move { Game::new(player_1, player_2, player_3).start().await },
+            ),
+        }
+    }
+
+    pub fn has_player_by_id(&self, id: u32) -> bool {
+        self.player_ids.contains(&id)
+    }
+}
+
+struct Game {
+    pub player_1: Box<dyn KnowsSkatRules>,
+    pub player_2: Box<dyn KnowsSkatRules>,
+    pub player_3: Box<dyn KnowsSkatRules>,
     cycle_count: i32,
     cards: Vec<Card>,
     game_value: u32,
@@ -16,9 +45,9 @@ pub struct Game {
 
 impl Game {
     pub fn new(
-        player_1: Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>>,
-        player_2: Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>>,
-        player_3: Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>>,
+        player_1: Box<dyn KnowsSkatRules>,
+        player_2: Box<dyn KnowsSkatRules>,
+        player_3: Box<dyn KnowsSkatRules>,
     ) -> Game {
         Game {
             player_1,
@@ -30,77 +59,45 @@ impl Game {
         }
     }
 
-    fn all_players(&mut self) -> Vec<Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>>> {
-        vec![
-            Arc::clone(&self.player_1),
-            Arc::clone(&self.player_2),
-            Arc::clone(&self.player_3),
-        ]
+    fn all_players(&mut self) -> Vec<&mut Box<dyn KnowsSkatRules>> {
+        vec![&mut self.player_1, &mut self.player_2, &mut self.player_3]
     }
 
-    fn next_player(&mut self) -> Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>> {
+    fn next_player(&mut self) -> &mut Box<dyn KnowsSkatRules> {
         self.cycle_count += 1;
         self.map_players()
     }
 
-    fn prev_player(&mut self) -> Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>> {
-        self.cycle_count -= 1;
-        self.map_players()
-    }
-
-    fn map_players(&mut self) -> Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>> {
+    fn map_players(&mut self) -> &mut Box<dyn KnowsSkatRules> {
         match self.cycle_count.rem_euclid(3) {
-            0 => Arc::clone(&self.player_1),
-            1 => Arc::clone(&self.player_2),
-            2 => Arc::clone(&self.player_3),
+            0 => &mut self.player_1,
+            1 => &mut self.player_2,
+            2 => &mut self.player_3,
             _ => unreachable!(),
         }
     }
 
-    fn player_by_id(&mut self, id: i32) -> Arc<Mutex<Option<Box<dyn KnowsSkatRules>>>> {
+    fn player_by_id(&mut self, id: i32) -> &mut Box<dyn KnowsSkatRules> {
         match id.rem_euclid(3) {
-            0 => Arc::clone(&self.player_1),
-            1 => Arc::clone(&self.player_2),
-            2 => Arc::clone(&self.player_3),
+            0 => &mut self.player_1,
+            1 => &mut self.player_2,
+            2 => &mut self.player_3,
             _ => unreachable!(),
         }
     }
 
     async fn broadcast_message(&mut self, msg: S2CMessage) {
-        self.player_1
-            .lock()
-            .await
-            .as_mut()
-            .unwrap()
-            .send_message(msg.clone())
-            .await;
-
-        self.player_2
-            .lock()
-            .await
-            .as_mut()
-            .unwrap()
-            .send_message(msg.clone())
-            .await;
-
-        self.player_3
-            .lock()
-            .await
-            .as_mut()
-            .unwrap()
-            .send_message(msg.clone())
-            .await;
+        self.player_1.send_message(msg.clone()).await;
+        self.player_2.send_message(msg.clone()).await;
+        self.player_3.send_message(msg.clone()).await;
     }
 
     pub async fn start(&mut self) {
         for _ in 0..10 {
-            for player in self.all_players().iter() {
-                let card = self.cards.pop().unwrap();
+            let mut next_cards: Vec<Card> = self.cards.drain(..3).collect();
+            for player in self.all_players().iter_mut() {
+                let card = next_cards.pop().unwrap();
                 player
-                    .lock()
-                    .await
-                    .as_mut()
-                    .unwrap()
                     .send_message(S2CMessage::DrawCard(card.clone()))
                     .await;
             }
@@ -119,26 +116,14 @@ impl Game {
 
     async fn assign_roles(&mut self) {
         self.next_player()
-            .lock()
-            .await
-            .as_mut()
-            .unwrap()
             .send_message(S2CMessage::AssignBidRole(BidRole::Hear))
             .await;
 
         self.next_player()
-            .lock()
-            .await
-            .as_mut()
-            .unwrap()
             .send_message(S2CMessage::AssignBidRole(BidRole::Say))
             .await;
 
         self.next_player()
-            .lock()
-            .await
-            .as_mut()
-            .unwrap()
             .send_message(S2CMessage::AssignBidRole(BidRole::SayFurther))
             .await;
     }
@@ -148,21 +133,10 @@ impl Game {
         for i in [0, 2, 1] {
             loop {
                 self.player_by_id(i)
-                    .lock()
-                    .await
-                    .as_mut()
-                    .unwrap()
                     .send_message(S2CMessage::YourTurn)
                     .await;
 
-                let val = self
-                    .player_by_id(i)
-                    .lock()
-                    .await
-                    .as_mut()
-                    .unwrap()
-                    .expect_message_bid()
-                    .await;
+                let val = self.player_by_id(i).expect_message_bid().await;
 
                 if val == 0 {
                     break;
@@ -188,9 +162,7 @@ impl Game {
 
     async fn normal_game(&mut self, solo: i32) {
         for i in 0..3 {
-            let p_arc = self.player_by_id(i);
-            let mut p_lock = p_arc.lock().await;
-            let p = p_lock.as_mut().unwrap();
+            let p = self.player_by_id(i);
             if i == solo {
                 p.send_message(S2CMessage::AssignGameRole(GameRole::NormalSolo))
                     .await;
@@ -207,50 +179,23 @@ impl Game {
         for _ in 0..2 {
             sleep(Duration::from_millis(750)).await;
             let msg = S2CMessage::DrawCard(self.cards.pop().unwrap());
-            self.player_by_id(solo)
-                .lock()
-                .await
-                .as_mut()
-                .unwrap()
-                .send_message(msg)
-                .await;
+            self.player_by_id(solo).send_message(msg).await;
         }
 
         for _ in 0..2 {
             self.player_by_id(solo)
-                .lock()
-                .await
-                .as_mut()
-                .unwrap()
                 .send_message(S2CMessage::YourTurn)
                 .await;
-            let card = self
-                .player_by_id(solo)
-                .lock()
-                .await
-                .as_mut()
-                .unwrap()
-                .expect_message_play_card()
-                .await;
+            let card = self.player_by_id(solo).expect_message_play_card().await;
             solo_trick.push(card);
         }
 
         //Get trump
         self.player_by_id(solo)
-            .lock()
-            .await
-            .as_mut()
-            .unwrap()
             .send_message(S2CMessage::SelectTrump)
             .await;
-        let trump = self
-            .player_by_id(solo)
-            .lock()
-            .await
-            .as_mut()
-            .unwrap()
-            .expect_message_trump()
-            .await;
+
+        let trump = self.player_by_id(solo).expect_message_trump().await;
         self.broadcast_message(S2CMessage::Trump(trump.clone()))
             .await;
 
@@ -262,19 +207,11 @@ impl Game {
 
             for current_player in turn_order(last_winner) {
                 self.player_by_id(current_player as i32)
-                    .lock()
-                    .await
-                    .as_mut()
-                    .unwrap()
                     .send_message(S2CMessage::YourTurn)
                     .await;
 
                 let card = self
                     .player_by_id(current_player as i32)
-                    .lock()
-                    .await
-                    .as_mut()
-                    .unwrap()
                     .expect_message_play_card()
                     .await;
 
@@ -312,20 +249,13 @@ impl Game {
         let duo_points = evaluate_cards_value(&duo_trick);
         let won_msg = if solo_points > duo_points {
             S2CMessage::GameOver(GameOverMessage {
-                winner_id: Some(self.player_by_id(solo).lock().await.as_mut().unwrap().id()),
+                winner_id: Some(self.player_by_id(solo).id()),
                 winner_points: solo_points,
                 loser_points: duo_points,
             })
         } else if solo_points < duo_points {
             S2CMessage::GameOver(GameOverMessage {
-                winner_id: Some(
-                    self.player_by_id(solo + 1)
-                        .lock()
-                        .await
-                        .as_mut()
-                        .unwrap()
-                        .id(),
-                ),
+                winner_id: Some(self.player_by_id(solo + 1).id()),
                 winner_points: duo_points,
                 loser_points: solo_points,
             })

@@ -81,9 +81,9 @@ impl KnowsSkatRules for Player {
         self.id
     }
 
-    fn into_any(self: Box<Self>) -> Box<dyn std::any::Any> {
+    /*fn into_any(self: Box<Self>) -> Box<dyn std::any::Any> {
         self
-    }
+    }*/
 }
 
 impl Player {

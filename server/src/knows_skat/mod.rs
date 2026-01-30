@@ -13,7 +13,7 @@ pub trait KnowsSkatRules: Debug + Send + Any {
     #[message_types_trait(Trump(Suit), PlayCard(Card), Bid(i32))]
     async fn expect_message(&mut self) -> C2SMessage;
     async fn send_message(&mut self, msg: S2CMessage);
-    fn into_any(self: Box<Self>) -> Box<dyn Any>;
+    //fn into_any(self: Box<Self>) -> Box<dyn Any>;
     fn name(&self) -> String;
     fn id(&self) -> u32;
 }

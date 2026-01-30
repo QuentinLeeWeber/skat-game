@@ -1,6 +1,6 @@
 use crate::knows_skat::player::Player;
 use crate::knows_skat::{KnowsSkatRules, npc::NPC};
-use crate::{game_handle::GameHandle, pending_game::PendingGame};
+use crate::{game::GameHandle, pending_game::PendingGame};
 use prelude::*;
 use std::sync::Arc;
 use tokio::net::TcpStream;
@@ -68,10 +68,13 @@ impl Lobby {
         match cmd {
             LobbyCommand::JoinGame { player_id } => {
                 let mut this_lobby = this_lobby.lock().await;
-                let player_pos = this_lobby.players.iter().position(|p| p.id == player_id);
+                let player = this_lobby
+                    .players
+                    .iter()
+                    .find(|p| p.id == player_id)
+                    .cloned();
 
-                if let Some(pos) = player_pos {
-                    let player = this_lobby.players.remove(pos);
+                if let Some(player) = player {
                     if let Some(game) = this_lobby.pending_game.add_player(Box::new(player)).await {
                         this_lobby.games.push(game);
                     }
@@ -110,24 +113,32 @@ impl Lobby {
 
         //removing from ongoing game (broadcasting closing off Game)
         let remove_game = self.games.iter().position(|g| g.has_player_by_id(id));
+        dbg!("glauben sie das ich erückt bin");
 
         if let Some(remove_game) = remove_game {
             println!("removed Game with player: {}", id);
-            let game = self.games.remove(remove_game);
 
-            let mut remaining_player: Vec<Player> = game
-                .abort()
-                .await
-                .into_iter()
-                .filter_map(|x| x.into_any().downcast::<Player>().ok().map(|b| *b))
-                .filter(|p| p.id() != id)
+            let remaining_player: Vec<u32> = self
+                .games
+                .get(remove_game)
+                .unwrap()
+                .player_ids
+                .iter()
+                .filter(|i| **i != id)
+                .map(|i| *i)
                 .collect();
 
-            remaining_player
-                .broadcast_message(S2CMessage::BackToLobby)
-                .await;
+            for p in self
+                .players
+                .iter_mut()
+                .filter(|p| remaining_player.contains(&dbg!(p.id())))
+                .collect::<Vec<&mut Player>>()
+            {
+                println!("sned back to lobby to :  {}", p.id);
+                p.send_message(S2CMessage::BackToLobby).await;
+            }
 
-            self.players.extend(remaining_player);
+            self.games.remove(remove_game);
         }
 
         //removing from players list
@@ -153,17 +164,5 @@ impl Lobby {
         new_player.send_message(msg).await;
 
         this.lock().await.players.push(new_player);
-    }
-}
-
-trait VecExt<T> {
-    async fn broadcast_message(&mut self, msg: S2CMessage);
-}
-
-impl VecExt<Player> for Vec<Player> {
-    async fn broadcast_message(&mut self, msg: S2CMessage) {
-        for player in &mut self.iter_mut() {
-            player.send_message(msg.clone()).await;
-        }
     }
 }
