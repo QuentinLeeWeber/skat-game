@@ -1,8 +1,10 @@
 use super::*;
 use std::env;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::TcpStream;
-use tokio::time::{Duration, sleep, timeout};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::TcpStream,
+    time::{Duration, sleep, timeout},
+};
 
 const TIMEOUT_SECS: f64 = 3.0;
 

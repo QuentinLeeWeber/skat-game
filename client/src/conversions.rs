@@ -1,5 +1,5 @@
 use crate::app_main::{CardRankSlint, CardSlint, CardSuitSlint, Player, PlayerSlint};
-use prelude::{Card, Rank, Suit};
+use prelude::*;
 
 impl From<Card> for CardSlint {
     fn from(card: Card) -> Self {

@@ -3,15 +3,15 @@ use crate::lobby::LobbyCommand;
 use async_trait::async_trait;
 use macros::message_types;
 use prelude::*;
-use std::fmt;
-use std::result::Result::Ok;
-use std::sync::Arc;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::TcpStream;
-use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
-use tokio::sync::{Mutex, mpsc};
-use tokio::task::JoinHandle;
-use tokio::time::{Duration, sleep};
+use std::{fmt, result::Result::Ok, sync::Arc};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::TcpStream,
+    net::tcp::{OwnedReadHalf, OwnedWriteHalf},
+    sync::{Mutex, mpsc},
+    task::JoinHandle,
+    time::{Duration, sleep},
+};
 
 pub struct Player {
     pub id: u32,

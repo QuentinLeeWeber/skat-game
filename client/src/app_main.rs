@@ -1,8 +1,7 @@
 use crate::networking;
 use prelude::*;
 use slint::{Model, ModelRc, VecModel};
-use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::{rc::Rc, sync::Arc, sync::Mutex};
 
 slint::include_modules!();
 
@@ -68,9 +67,7 @@ pub async fn main() -> Result<(), slint::PlatformError> {
             let hand_model_into: Vec<Card> = hand_model.iter().map(|c| c.into()).collect();
             let table_cards_into: Vec<Card> = table_cards.iter().map(|c| c.into()).collect();
 
-            if !possible_moves(&hand_model_into, &table_cards_into, &app_lock.trump)
-                .iter()
-                .any(|c| *c == played_card)
+            if !possible_moves(&hand_model_into, &table_cards_into, &app_lock.trump).contains(&played_card)
             {
                 return;
             }

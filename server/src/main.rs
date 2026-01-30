@@ -1,10 +1,11 @@
 use crate::lobby::Lobby;
 use anyhow::Result;
 use prelude::*;
-use std::env;
-use std::result::Result::Ok;
-use tokio::net::TcpListener;
-use tokio::time::{Duration, sleep};
+use std::{env, result::Result::Ok};
+use tokio::{
+    net::TcpListener,
+    time::{Duration, sleep},
+};
 
 #[cfg(test)]
 mod tests;

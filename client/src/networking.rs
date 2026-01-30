@@ -1,12 +1,15 @@
 use crate::app_main::*;
 use prelude::*;
 use slint::{Model, VecModel, Weak};
-use std::sync::mpsc;
-use std::sync::{Arc, Mutex};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
-use tokio::net::TcpStream;
-use tokio::time::{sleep, Duration};
+use std::sync::{mpsc, Arc, Mutex};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::{
+        tcp::{OwnedReadHalf, OwnedWriteHalf},
+        TcpStream,
+    },
+    time::{sleep, Duration},
+};
 
 const IP_ADDR: &str = include_str!("../server.conf");
 

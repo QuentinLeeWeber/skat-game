@@ -2,8 +2,7 @@ use crate::C2SMessage;
 use async_trait::async_trait;
 use macros::message_types_trait;
 use prelude::*;
-use std::any::Any;
-use std::fmt::Debug;
+use std::{any::Any, fmt::Debug};
 
 pub mod npc;
 pub mod player;

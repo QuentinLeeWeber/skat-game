@@ -1,12 +1,13 @@
-use crate::knows_skat::player::Player;
-use crate::knows_skat::{KnowsSkatRules, npc::NPC};
+use crate::knows_skat::{KnowsSkatRules, npc::NPC, player::Player};
 use crate::{game::GameHandle, pending_game::PendingGame};
 use prelude::*;
 use std::sync::Arc;
-use tokio::net::TcpStream;
-use tokio::sync::{Mutex, mpsc};
-use tokio::task::JoinHandle;
-use tokio::time::{Duration, sleep};
+use tokio::{
+    net::TcpStream,
+    sync::{Mutex, mpsc},
+    task::JoinHandle,
+    time::{Duration, sleep},
+};
 
 pub enum LobbyCommand {
     JoinGame { player_id: u32 },
@@ -74,11 +75,10 @@ impl Lobby {
                     .find(|p| p.id == player_id)
                     .cloned();
 
-                if let Some(player) = player {
-                    if let Some(game) = this_lobby.pending_game.add_player(Box::new(player)).await {
+                if let Some(player) = player
+                    && let Some(game) = this_lobby.pending_game.add_player(Box::new(player)).await {
                         this_lobby.games.push(game);
                     }
-                }
             }
             LobbyCommand::Disconnect { player_id } => {
                 this_lobby.lock().await.remove_player(player_id).await;
@@ -124,8 +124,7 @@ impl Lobby {
                 .unwrap()
                 .player_ids
                 .iter()
-                .filter(|i| **i != id)
-                .map(|i| *i)
+                .filter(|i| **i != id).copied()
                 .collect();
 
             for p in self

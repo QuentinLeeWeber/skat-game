@@ -139,17 +139,17 @@ fn parse_attributes(attr: TokenStream) -> Vec<Attribute> {
             };
 
             let member = match attr_string.find('(') {
-                Some(pos) => (&attr_string[..pos]).to_string(),
+                Some(pos) => attr_string[..pos].to_string(),
                 None => attr_string,
             };
 
-            let member_snake_case = format!("{}", member).to_case(Case::Snake);
-            let member_pascal_case = format!("{}", member).to_case(Case::Pascal);
+            let member_snake_case = member.to_string().to_case(Case::Snake);
+            let member_pascal_case = member.to_string().to_case(Case::Pascal);
 
             let new_fn_name =
                 syn::Ident::new(&format!("expect_message_{}", member_snake_case), span);
 
-            let some_res = format!("{}", member_pascal_case);
+            let some_res = member_pascal_case.to_string();
             let some_res = syn::Ident::new(&some_res, span);
 
             attrs.push(Attribute {

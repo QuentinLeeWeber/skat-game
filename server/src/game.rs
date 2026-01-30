@@ -1,8 +1,10 @@
 use crate::knows_skat::KnowsSkatRules;
 use prelude::*;
 use rand::seq::SliceRandom;
-use tokio::task::JoinHandle;
-use tokio::time::{Duration, sleep};
+use tokio::{
+    task::JoinHandle,
+    time::{Duration, sleep},
+};
 
 pub struct GameHandle {
     pub player_ids: Vec<u32>,

@@ -151,13 +151,13 @@ pub fn possible_moves(hand: &Vec<Card>, table: &Vec<Card>, trump: &Option<Suit>)
             .into_iter()
             .filter(|card| match trump {
                 Some(t) => &card.suit == t || card.rank == Rank::Jack,
-                None => &card.rank == &Rank::Jack,
+                None => card.rank == Rank::Jack,
             })
             .collect();
     }
 
     if has_leading_suit {
-        hand.into_iter()
+        hand.iter()
             .filter(|card| &card.suit == leading_suit && card.rank != Rank::Jack)
             .cloned()
             .collect()
