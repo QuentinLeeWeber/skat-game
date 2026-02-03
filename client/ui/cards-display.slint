@@ -1,6 +1,11 @@
 export { CardsDisplay }
 
-import { CardSuitSlint, CardRankSlint, CardSlint, CardTextures } from "structs.slint";
+import {
+    CardSuitSlint,
+    CardRankSlint,
+    CardSlint,
+    CardTextures,
+} from "structs.slint";
 
 component CardDisplay inherits Rectangle {
     callback play_card(card: CardSlint);
@@ -8,13 +13,17 @@ component CardDisplay inherits Rectangle {
     callback start_pressed;
 
     in-out property <bool> press;
-    in property <CardSlint> card; 
+    in property <CardSlint> card;
     in property <image> icon;
 
     ta := TouchArea {
-        clicked => { play_card(card); }
+        clicked => {
+            play_card(card);
+        }
         //moved => { set_position(); }
-        changed pressed => { start_pressed(); }
+        changed pressed => {
+            start_pressed();
+        }
     }
 
     press: ta.pressed;
@@ -37,6 +46,7 @@ component CardDisplay inherits Rectangle {
                 source: icon;
                 width: parent.width;
             }
+
             border-radius: 10px;
             clip: true;
         }
@@ -44,33 +54,38 @@ component CardDisplay inherits Rectangle {
 }
 
 component CardsDisplay inherits Rectangle {
-    in-out property<[CardSlint]> hand;
+    in-out property <[CardSlint]> hand;
     callback play_card(card: CardSlint);
     callback set_position(from: int, to: int);
 
     property <length> mouseX;
     property <length> mouseY;
 
-    ta := TouchArea {}
+    ta := TouchArea { }
+
     mouseX: ta.mouse-x;
     mouseY: ta.mouse-y;
 
-    for card[i] in hand : CardDisplay {
+    for card[i] in hand: CardDisplay {
         height: 500px;
         width: parent.width / 3;
 
         //x: self.press ? mouseX : parent.width / 2 - self.width / 2;
-        //y: self.press ? mouseY : parent.height / 2; 
+        //y: self.press ? mouseY : parent.height / 2;
 
         x: parent.width / 2 - self.width / 2;
-        y: parent.height * 60%; 
-        
+        y: parent.height * 60%;
+
         transform-rotation: (i - (hand.length / 2) + 1) * 0.55deg * parent.width / 100px;
         transform-origin: { x: self.width / 2, y: parent.height * 80% };
 
         icon: CardTextures.card_to_image(card);
 
-        play_card => { play_card(card); }
-        set_position => { set_position(i, 0)}
-    } 
+        play_card => {
+            play_card(card);
+        }
+        set_position => {
+            set_position(i, 0)
+        }
+    }
 }

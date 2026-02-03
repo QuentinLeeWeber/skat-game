@@ -7,7 +7,7 @@ export component LoginWindow inherits Rectangle {
     border-radius: 10px;
     border-color: rgb(200, 200, 200);
     background: Palette.background;
-    drop-shadow-blur:  5px;
+    drop-shadow-blur: 5px;
     drop-shadow-color: rgba(0, 0, 0, 0.2);
     drop-shadow-offset-x: 5px;
     drop-shadow-offset-y: 5px;
@@ -18,7 +18,7 @@ export component LoginWindow inherits Rectangle {
         width: 80%;
         height: 40px;
 
-        input := TextInput { 
+        input := TextInput {
             color: Palette.control-foreground;
             edited => {
                 root.input_text = self.text;

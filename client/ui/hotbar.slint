@@ -11,33 +11,40 @@ export component Hotbar inherits Rectangle {
     in property <bool> my_turn;
     in-out property <string> game_value;
     in-out property <bool> select_trump;
-    
+
     background: @radial-gradient(circle, #005400 0%, #003400 100%);
     Rectangle {
         y: 0;
         height: 2px;
-        background: red; 
+        background: red;
     }
+
     HorizontalLayout {
         alignment: center;
         spacing: 5px;
-        
-        if (select_trump) : Button { 
+
+        if (select_trump): Button {
             icon: @image-url("textures/diamond_icon.png");
             icon-size: self.height * 30%;
             preferred-height: self.height * 75%;
-            clicked => { root.selected_trump(CardSuitSlint.diamond); }
+            clicked => {
+                root.selected_trump(CardSuitSlint.diamond);
+            }
         }
-        if (select_trump) : Button { 
+        if (select_trump): Button {
             icon: @image-url("textures/hearth_icon.png");
             icon-size: self.height * 30%;
             preferred-height: self.height * 75%;
-            clicked => { root.selected_trump(CardSuitSlint.heart); }
+            clicked => {
+                root.selected_trump(CardSuitSlint.heart);
+            }
         }
-        if (app_state == AppState.Bid && my_turn) : Button { 
+        if (app_state == AppState.Bid && my_turn): Button {
             text: "Pass";
             preferred-height: parent.height * 40%;
-            clicked => { root.pass() };
+            clicked => {
+                root.pass()
+            };
         }
         Rectangle {
             height: parent.height;
@@ -45,33 +52,56 @@ export component Hotbar inherits Rectangle {
             border-radius: self.height / 2;
             background: Palette.background;
             clip: true;
-            if(game_trump == CardSuitSlint.clubs) : Image { height: parent.height * 70%; width: parent.width * 70%; source: @image-url("textures/clubs_icon.png"); }
-            if(game_trump == CardSuitSlint.diamond) : Image { height: parent.height * 70%; width: parent.width * 70%; source: @image-url("textures/diamond_icon.png"); }
-            if(game_trump == CardSuitSlint.heart) : Image { height: parent.height * 70%; width: parent.width * 70%; source: @image-url("textures/hearth_icon.png"); }
-            if(game_trump == CardSuitSlint.spade) : Image { height: parent.height * 70%; width: parent.width * 70%; source: @image-url("textures/spade_icon.png"); }
+            if(game_trump == CardSuitSlint.clubs): Image {
+                height: parent.height * 70%;
+                width: parent.width * 70%;
+                source: @image-url("textures/clubs_icon.png");
+            }
+            if(game_trump == CardSuitSlint.diamond): Image {
+                height: parent.height * 70%;
+                width: parent.width * 70%;
+                source: @image-url("textures/diamond_icon.png");
+            }
+            if(game_trump == CardSuitSlint.heart): Image {
+                height: parent.height * 70%;
+                width: parent.width * 70%;
+                source: @image-url("textures/hearth_icon.png");
+            }
+            if(game_trump == CardSuitSlint.spade): Image {
+                height: parent.height * 70%;
+                width: parent.width * 70%;
+                source: @image-url("textures/spade_icon.png");
+            }
             Text {
                 text: root.game_value;
                 color: Palette.control-foreground;
                 vertical-alignment: center;
                 font-size: parent.height * 70%;
             }
-        } 
-        if (app_state == AppState.Bid && my_turn) : Button { 
+        }
+
+        if (app_state == AppState.Bid && my_turn): Button {
             text: "Bid Further";
             preferred-height: parent.height * 40%;
-            clicked => { root.bid_further() };
+            clicked => {
+                root.bid_further()
+            };
         }
-        if (select_trump) : Button { 
+        if (select_trump): Button {
             icon: @image-url("textures/spade_icon.png");
             icon-size: self.height * 30%;
             preferred-height: self.height * 75%;
-            clicked => { root.selected_trump(CardSuitSlint.spade); }
+            clicked => {
+                root.selected_trump(CardSuitSlint.spade);
+            }
         }
-        if (select_trump) : Button { 
+        if (select_trump): Button {
             icon: @image-url("textures/clubs_icon.png");
             icon-size: self.height * 30%;
             preferred-height: self.height * 75%;
-            clicked => { root.selected_trump(CardSuitSlint.clubs); }
+            clicked => {
+                root.selected_trump(CardSuitSlint.clubs);
+            }
         }
     }
 }

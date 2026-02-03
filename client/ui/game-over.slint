@@ -6,15 +6,15 @@ export component GameOverScreen inherits Rectangle {
     in property <AppState> app_state;
     in property <int> points: 0;
 
-    if (app_state == AppState.GameWin) : Image {
+    if (app_state == AppState.GameWin): Image {
         source: @image-url("textures/thumbs_up.png");
         width: root.width * 80%;
         height: root.height * 80%;
         x: root.width * 10%;
         y: root.height * 10%;
     }
-    
-    if (app_state == AppState.GameLoose) : Image {
+
+    if (app_state == AppState.GameLoose): Image {
         source: @image-url("textures/cat_laugh.jpg");
         width: root.width * 80%;
         height: root.height * 80%;
@@ -22,7 +22,7 @@ export component GameOverScreen inherits Rectangle {
         y: root.height * 10%;
     }
 
-    if (app_state == AppState.GameTie) : Image {
+    if (app_state == AppState.GameTie): Image {
         source: @image-url("textures/tie.jpg");
         width: root.width * 80%;
         height: root.height * 80%;
@@ -30,45 +30,50 @@ export component GameOverScreen inherits Rectangle {
         y: root.height * 10%;
     }
 
-    HorizontalLayout { alignment: center; VerticalLayout {
+    HorizontalLayout {
         alignment: center;
-        spacing: 20px; 
+        VerticalLayout {
+            alignment: center;
+            spacing: 20px;
 
-        if (app_state == AppState.GameWin) : Text {
-            text: "You Won!";
-            font-size: 32px;
-            color: white;
-        }
+            if (app_state == AppState.GameWin): Text {
+                text: "You Won!";
+                font-size: 32px;
+                color: white;
+            }
 
-        if (app_state == AppState.GameLoose) : Text {
-            text: "You Lost!";
-            font-size: 32px;
-            color: white;
-        }
+            if (app_state == AppState.GameLoose): Text {
+                text: "You Lost!";
+                font-size: 32px;
+                color: white;
+            }
 
-        if (app_state == AppState.GameTie) : Text {
-            text: "It's a Tie!";
-            font-size: 32px;
-            color: white;
-        }
+            if (app_state == AppState.GameTie): Text {
+                text: "It's a Tie!";
+                font-size: 32px;
+                color: white;
+            }
 
-        Text {
-            text: "Points: " + points;
-            font-size: 24px;
-            color: white;
-        }
+            Text {
+                text: "Points: " + points;
+                font-size: 24px;
+                color: white;
+            }
 
-        Text {
-            text: "Click to return to Lobby";
-            font-size: 18px;
-            color: white;
+            Text {
+                text: "Click to return to Lobby";
+                font-size: 18px;
+                color: white;
+            }
         }
-    }}
+    }
 
     Button {
         opacity: 0.0;
         height: parent.height;
         width: parent.width;
-        clicked => { root.clicked(); }
+        clicked => {
+            root.clicked();
+        }
     }
 }

@@ -4,11 +4,11 @@ import { VerticalBox, Button, Palette } from "std-widgets.slint";
 import { PlayerSlint } from "structs.slint";
 
 component PlayerDP inherits Rectangle {
-    property<length> radius: self.width * 15%;
-    in-out property<string> name;
+    property <length> radius: self.width * 15%;
+    in-out property <string> name;
 
     Rectangle {
-        property<length> size-diff: 10px;
+        property <length> size-diff: 10px;
         x: radius;
         y: size-diff;
         height: (radius - size-diff) * 2;
@@ -16,7 +16,7 @@ component PlayerDP inherits Rectangle {
         background: Palette.background;
 
         Rectangle {
-            property<length> litte-radius: parent.height / 2;
+            property <length> litte-radius: parent.height / 2;
             background: Palette.background;
             x: parent.width - litte-radius;
             y: parent.height / 2 - litte-radius;
@@ -44,7 +44,7 @@ component PlayerDP inherits Rectangle {
     }
 
     Rectangle {
-        property<length> radius-diff: 7px;
+        property <length> radius-diff: 7px;
         x: radius-diff;
         y: radius-diff;
         width: (radius - radius-diff) * 2;
@@ -62,8 +62,8 @@ component PlayerDP inherits Rectangle {
 }
 
 component PlayersDisplay inherits Rectangle {
-    in property<[PlayerSlint]> players;
-    in property<string> self-name;
+    in property <[PlayerSlint]> players;
+    in property <string> self-name;
 
     VerticalLayout {
         spacing: 10px;
@@ -71,15 +71,14 @@ component PlayersDisplay inherits Rectangle {
 
         PlayerDP {
             transform-scale: 115%;
-            transform-origin: { x: 10px , y: 0 };
+            transform-origin: { x: 10px, y: 0 };
             name: root.self-name;
             preferred-height: root.width * 35%;
         }
 
-        for player[i] in players : PlayerDP {
+        for player[i] in players: PlayerDP {
             name: player.name;
             preferred-height: root.width * 30%;
         }
     }
 }
-

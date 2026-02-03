@@ -11,8 +11,8 @@ export component AlertWindow inherits Rectangle {
         alert_msg = msg;
         timer.running = true;
         self.offset = 0;
-    } 
-    
+    }
+
     timer := Timer {
         interval: 3s;
         running: false;
@@ -20,12 +20,12 @@ export component AlertWindow inherits Rectangle {
             root.offset = 500px;
             self.running = false;
         }
-    } 
+    }
 
     Rectangle {
         border-radius: 10px;
         background: Palette.background;
-        drop-shadow-blur:  5px;
+        drop-shadow-blur: 5px;
         drop-shadow-color: rgba(0, 0, 0, 0.2);
         drop-shadow-offset-x: 5px;
         drop-shadow-offset-y: 5px;

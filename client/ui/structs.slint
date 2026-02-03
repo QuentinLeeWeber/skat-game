@@ -12,7 +12,7 @@ export struct PlayerSlint {
     id: int,
 }
 
-export global CardTextures  {
+export global CardTextures {
     //this is a bit cursed, but slint does not support non static strings as image source
     property <[image]> card_images: [
         @image-url("textures/clubs_seven.png"),
@@ -23,7 +23,6 @@ export global CardTextures  {
         @image-url("textures/clubs_queen.png"),
         @image-url("textures/clubs_king.png"),
         @image-url("textures/clubs_ace.png"),
-
         @image-url("textures/diamond_seven.png"),
         @image-url("textures/diamond_eigth.png"),
         @image-url("textures/diamond_nine.png"),
@@ -32,7 +31,6 @@ export global CardTextures  {
         @image-url("textures/diamond_queen.png"),
         @image-url("textures/diamond_king.png"),
         @image-url("textures/diamond_ace.png"),
-
         @image-url("textures/hearth_seven.png"),
         @image-url("textures/hearth_eigth.png"),
         @image-url("textures/hearth_nine.png"),
@@ -41,7 +39,6 @@ export global CardTextures  {
         @image-url("textures/hearth_queen.png"),
         @image-url("textures/hearth_king.png"),
         @image-url("textures/hearth_ace.png"),
-
         @image-url("textures/spade_seven.png"),
         @image-url("textures/spade_eigth.png"),
         @image-url("textures/spade_nine.png"),
@@ -57,20 +54,34 @@ export global CardTextures  {
     }
 
     pure function suit_to_int(suit: CardSuitSlint) -> int {
-        if suit == CardSuitSlint.clubs { return 0; }
-        else if suit == CardSuitSlint.diamond { return 1; }
-        else if suit == CardSuitSlint.heart { return 2; }
-        else { return 3; }
+        if suit == CardSuitSlint.clubs {
+            return 0;
+        } else if suit == CardSuitSlint.diamond {
+            return 1;
+        } else if suit == CardSuitSlint.heart {
+            return 2;
+        } else {
+            return 3;
+        }
     }
 
     pure function rank_to_int(rank: CardRankSlint) -> int {
-        if rank == CardRankSlint.Seven { return 1; }
-        else if rank == CardRankSlint.Eight { return 2; }
-        else if rank == CardRankSlint.Nine { return 3; }
-        else if rank == CardRankSlint.Ten { return 4; }
-        else if rank == CardRankSlint.Jack { return 5; }
-        else if rank == CardRankSlint.Queen { return 6; }
-        else if rank == CardRankSlint.King { return 7; }
-        else { return 8; }
+        if rank == CardRankSlint.Seven {
+            return 1;
+        } else if rank == CardRankSlint.Eight {
+            return 2;
+        } else if rank == CardRankSlint.Nine {
+            return 3;
+        } else if rank == CardRankSlint.Ten {
+            return 4;
+        } else if rank == CardRankSlint.Jack {
+            return 5;
+        } else if rank == CardRankSlint.Queen {
+            return 6;
+        } else if rank == CardRankSlint.King {
+            return 7;
+        } else {
+            return 8;
+        }
     }
 }

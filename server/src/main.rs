@@ -10,7 +10,6 @@ use tokio::{
 #[cfg(test)]
 mod tests;
 
-//mod client_connection;
 mod game;
 mod knows_skat;
 mod lobby;
