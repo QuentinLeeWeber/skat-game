@@ -201,25 +201,28 @@ impl Player {
                 *self.last_keep_alive.lock().await = system_time();
             }
             Some(C2SMessage::JoinGame) => {
-                self.lobby_cmd_cnl
+                let _ = self
+                    .lobby_cmd_cnl
                     .send(LobbyCommand::JoinGame { player_id: self.id })
-                    .await
-                    .unwrap_or_else(|_| unreachable!());
+                    .await;
             }
             Some(C2SMessage::Login(name)) => {
-                self.lobby_cmd_cnl
+                let _ = self
+                    .lobby_cmd_cnl
                     .send(LobbyCommand::Login {
                         player_id: self.id,
                         name,
                     })
-                    .await
-                    .unwrap_or_else(|_| unreachable!());
+                    .await;
             }
             Some(C2SMessage::AddNPC) => {
-                self.lobby_cmd_cnl
-                    .send(LobbyCommand::AddNPC)
-                    .await
-                    .unwrap_or_else(|_| unreachable!());
+                let _ = self.lobby_cmd_cnl.send(LobbyCommand::AddNPC).await;
+            }
+            Some(C2SMessage::BackToLobby) => {
+                let _ = self
+                    .lobby_cmd_cnl
+                    .send(LobbyCommand::BackToLobby { player_id: self.id })
+                    .await;
             }
             Some(msg) => {
                 self.game_messages_tx
@@ -228,10 +231,10 @@ impl Player {
                     .unwrap_or_else(|_| unreachable!());
             }
             None => {
-                self.lobby_cmd_cnl
+                let _ = self
+                    .lobby_cmd_cnl
                     .send(LobbyCommand::Disconnect { player_id: self.id })
-                    .await
-                    .unwrap_or_else(|_| unreachable!());
+                    .await;
             }
         }
     }

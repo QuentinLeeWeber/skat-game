@@ -67,7 +67,8 @@ pub async fn main() -> Result<(), slint::PlatformError> {
             let hand_model_into: Vec<Card> = hand_model.iter().map(|c| c.into()).collect();
             let table_cards_into: Vec<Card> = table_cards.iter().map(|c| c.into()).collect();
 
-            if !possible_moves(&hand_model_into, &table_cards_into, &app_lock.trump).contains(&played_card)
+            if !possible_moves(&hand_model_into, &table_cards_into, &app_lock.trump)
+                .contains(&played_card)
             {
                 return;
             }
@@ -156,6 +157,7 @@ pub async fn main() -> Result<(), slint::PlatformError> {
         let hand_model = Rc::clone(&hand_model);
         let players_model = Rc::clone(&players_model);
         let table_cards = Rc::clone(&table_cards);
+        let sock_tx = sock_tx.clone();
         move || {
             let mut app_model = app_model.lock().unwrap();
             app_model.state = AppState::Lobby;
@@ -169,6 +171,7 @@ pub async fn main() -> Result<(), slint::PlatformError> {
                 players_model.clear();
                 table_cards.clear();
             }
+            let _ = sock_tx.send(C2SMessage::BackToLobby);
         }
     });
 

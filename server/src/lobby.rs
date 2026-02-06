@@ -14,6 +14,7 @@ pub enum LobbyCommand {
     Disconnect { player_id: u32 },
     Login { player_id: u32, name: String },
     AddNPC,
+    BackToLobby { player_id: u32 },
 }
 
 pub struct Lobby {
@@ -76,9 +77,10 @@ impl Lobby {
                     .cloned();
 
                 if let Some(player) = player
-                    && let Some(game) = this_lobby.pending_game.add_player(Box::new(player)).await {
-                        this_lobby.games.push(game);
-                    }
+                    && let Some(game) = this_lobby.pending_game.add_player(Box::new(player)).await
+                {
+                    this_lobby.games.push(game);
+                }
             }
             LobbyCommand::Disconnect { player_id } => {
                 this_lobby.lock().await.remove_player(player_id).await;
@@ -104,14 +106,15 @@ impl Lobby {
                     this_lobby.games.push(game);
                 }
             }
+            LobbyCommand::BackToLobby { player_id } => {
+                let mut this = this_lobby.lock().await;
+                this.pending_game.try_remove_player(player_id).await;
+                this.try_remove_player_from_game(player_id).await;
+            }
         }
     }
 
-    pub async fn remove_player(&mut self, id: u32) {
-        //removing from pending game
-        self.pending_game.try_remove_player(id).await;
-
-        //removing from ongoing game (broadcasting closing off Game)
+    async fn try_remove_player_from_game(&mut self, id: u32) {
         let remove_game = self.games.iter().position(|g| g.has_player_by_id(id));
         dbg!("glauben sie das ich erückt bin");
 
@@ -124,7 +127,8 @@ impl Lobby {
                 .unwrap()
                 .player_ids
                 .iter()
-                .filter(|i| **i != id).copied()
+                .filter(|i| **i != id)
+                .copied()
                 .collect();
 
             for p in self
@@ -139,6 +143,13 @@ impl Lobby {
 
             self.games.remove(remove_game);
         }
+    }
+
+    pub async fn remove_player(&mut self, id: u32) {
+        //removing from pending game
+        self.pending_game.try_remove_player(id).await;
+
+        self.try_remove_player_from_game(id).await;
 
         //removing from players list
         let p_count = self.players.len();

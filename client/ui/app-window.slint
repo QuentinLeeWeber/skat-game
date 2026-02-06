@@ -15,14 +15,19 @@ import { Hotbar } from "hotbar.slint";
 import { LoginWindow } from "login-window.slint";
 import { GameOverScreen } from "game-over.slint";
 import { AlertWindow } from "alert-window.slint";
+import { Button } from "std-widgets.slint";
 
 export component MainWindow inherits Window {
-    height: 1000px;
-    width: 570px;
+    //height: 1000px;
+    //width: 570px;
     title: "Skat-Game";
 
     in-out property <bool> my_turn: false;
     in-out property <AppState> app_state;
+
+    public function alert(msg: string) {
+        alert_window.alert(msg);
+    }
 
     Rectangle {
         background: @radial-gradient(circle, #007400 0%, #004400 100%);
@@ -120,14 +125,22 @@ export component MainWindow inherits Window {
         points: root.points;
     }
 
-    public function alert(msg: string) {
-        alert_window.alert(msg);
-    }
     alert_window := AlertWindow {
         height: 100px;
         width: 400px;
         x: root.width - self.width - 10px;
         y: root.height - self.height - 10px;
+    }
+
+    if (app_state == AppState.Game || app_state == AppState.Bid || app_state == AppState.PendingGame): Button {
+        icon: @image-url("textures/back_to_lobby.png");
+        height: 50px;
+        width: 50px;
+        x: root.width - self.width - 5px;
+        y: 5px;
+        clicked => {
+            root.return_to_lobby();
+        }
     }
 
     callback submit_name(name: string);

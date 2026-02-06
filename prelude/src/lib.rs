@@ -29,6 +29,7 @@ pub enum C2SMessage {
     AddNPC,
     JoinGame,
     Trump(Suit),
+    BackToLobby,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
