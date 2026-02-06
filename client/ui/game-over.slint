@@ -6,28 +6,32 @@ export component GameOverScreen inherits Rectangle {
     in property <AppState> app_state;
     in property <int> points: 0;
 
-    if (app_state == AppState.GameWin): Image {
-        source: @image-url("textures/thumbs_up.png");
+    pure function img(state: AppState) -> image {
+        if (state == AppState.GameWin) {
+            return @image-url("textures/thumbs_up.png");
+        }
+        if (state == AppState.GameLoose) {
+            return @image-url("textures/cat_laugh.jpg");
+        }
+        return @image-url("textures/tie.jpg");
+    }
+
+    Image {
+        source: img(app_state);
         width: root.width * 80%;
         height: root.height * 80%;
         x: root.width * 10%;
         y: root.height * 10%;
     }
 
-    if (app_state == AppState.GameLoose): Image {
-        source: @image-url("textures/cat_laugh.jpg");
-        width: root.width * 80%;
-        height: root.height * 80%;
-        x: root.width * 10%;
-        y: root.height * 10%;
-    }
-
-    if (app_state == AppState.GameTie): Image {
-        source: @image-url("textures/tie.jpg");
-        width: root.width * 80%;
-        height: root.height * 80%;
-        x: root.width * 10%;
-        y: root.height * 10%;
+    pure function msg(state: AppState) -> string {
+        if (state == AppState.GameWin) {
+            return "You Won!";
+        }
+        if (state == AppState.GameLoose) {
+            return "You Lost!";
+        }
+        return "It's a Tie!";
     }
 
     HorizontalLayout {
@@ -36,20 +40,8 @@ export component GameOverScreen inherits Rectangle {
             alignment: center;
             spacing: 20px;
 
-            if (app_state == AppState.GameWin): Text {
-                text: "You Won!";
-                font-size: 32px;
-                color: white;
-            }
-
-            if (app_state == AppState.GameLoose): Text {
-                text: "You Lost!";
-                font-size: 32px;
-                color: white;
-            }
-
-            if (app_state == AppState.GameTie): Text {
-                text: "It's a Tie!";
+            Text {
+                text: msg(app_state);
                 font-size: 32px;
                 color: white;
             }
