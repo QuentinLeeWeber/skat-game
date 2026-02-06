@@ -60,10 +60,7 @@ export component GameOverScreen inherits Rectangle {
         }
     }
 
-    Button {
-        opacity: 0.0;
-        height: parent.height;
-        width: parent.width;
+    TouchArea {
         clicked => {
             root.clicked();
         }
