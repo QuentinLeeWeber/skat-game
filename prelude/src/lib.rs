@@ -8,7 +8,7 @@ pub enum S2CMessage {
     AssignBidRole(BidRole),
     NewBid(i32),
     AssignGameRole(GameRole),
-    YourTurn,
+    PlayerTurn(u32),
     Trump(Suit),
     GameOver(GameOverMessage),
     BackToLobby,

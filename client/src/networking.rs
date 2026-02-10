@@ -228,9 +228,10 @@ fn handle_server_msg(msg: S2CMessage, app_model: Arc<Mutex<AppModel>>, ui: Weak<
                 ui.unwrap().set_app_state(AppState::Game);
             });
         }
-        S2CMessage::YourTurn => {
+        S2CMessage::PlayerTurn(id) => {
             let _ = slint::invoke_from_event_loop(move || {
                 ui.unwrap().set_my_turn(true);
+                ui.unwrap().set_has_turn_id(id as i32);
             });
         }
         S2CMessage::SelectTrump => {

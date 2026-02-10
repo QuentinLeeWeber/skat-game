@@ -108,7 +108,20 @@ pub async fn main() -> Result<(), slint::PlatformError> {
             let mut app_model = app_model.lock().unwrap();
             app_model.submit_name(name.to_string());
             if let Some(ui) = ui_weak.upgrade() {
-                ui.set_name(name.clone());
+                let players = ui.get_players();
+                let vec_model = players
+                    .as_any()
+                    .downcast_ref::<VecModel<PlayerSlint>>()
+                    .unwrap();
+
+                vec_model.push(
+                    Player {
+                        id: app_model.player_id,
+                        name: name.to_string(),
+                    }
+                    .into(),
+                );
+
                 ui.set_app_state(AppState::Lobby);
 
                 let _ = sock_tx.send(C2SMessage::Login(name.into()));
@@ -118,8 +131,11 @@ pub async fn main() -> Result<(), slint::PlatformError> {
 
     ui.on_join_game({
         let sock_tx = sock_tx.clone();
+        let app_model = Arc::clone(&app_model);
         move || {
-            let _ = sock_tx.send(C2SMessage::JoinGame);
+            if app_model.lock().unwrap().state == AppState::Lobby {
+                let _ = sock_tx.send(C2SMessage::JoinGame);
+            }
         }
     });
 
@@ -169,6 +185,13 @@ pub async fn main() -> Result<(), slint::PlatformError> {
                 ui.set_game_value("0".into());
                 hand_model.clear();
                 players_model.clear();
+                players_model.push(
+                    Player {
+                        id: app_model.player_id,
+                        name: app_model.name.clone().unwrap_or_default(),
+                    }
+                    .into(),
+                );
                 table_cards.clear();
             }
             let _ = sock_tx.send(C2SMessage::BackToLobby);

@@ -105,14 +105,14 @@ export component MainWindow inherits Window {
         }
     }
 
-    in property <string> name;
     in property <[PlayerSlint]> players;
+    in property <int> has_turn_id;
     if (app_state != AppState.Login): PlayersDisplay {
         x: 0;
         y: 0;
         width: max(root.width * 30%, 200px);
         players: root.players;
-        self-name: root.name;
+        has_turn_id: has_turn_id;
     }
 
     in property <int> points;

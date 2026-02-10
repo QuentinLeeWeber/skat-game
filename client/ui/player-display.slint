@@ -5,6 +5,7 @@ import { PlayerSlint } from "structs.slint";
 
 component PlayerDP inherits Rectangle {
     property <length> radius: self.width * 15%;
+    in property <bool> highlighted: false;
     in-out property <string> name;
 
     Rectangle {
@@ -14,16 +15,9 @@ component PlayerDP inherits Rectangle {
         height: (radius - size-diff) * 2;
         width: parent.width - radius - size-diff - self.height / 2;
         background: Palette.background;
-
-        Rectangle {
-            property <length> litte-radius: parent.height / 2;
-            background: Palette.background;
-            x: parent.width - litte-radius;
-            y: parent.height / 2 - litte-radius;
-            border-radius: litte-radius;
-            width: litte-radius * 2;
-            height: litte-radius * 2;
-        }
+        border-radius: self.height / 2;
+        border-color: highlighted ? yellow : Palette.background;
+        border-width: 2px;
 
         Text {
             x: radius + 5px;
@@ -41,6 +35,8 @@ component PlayerDP inherits Rectangle {
         height: radius * 2;
         border-radius: radius;
         background: Palette.background;
+        border-color: highlighted ? yellow : Palette.background;
+        border-width: 2px;
     }
 
     Rectangle {
@@ -63,22 +59,16 @@ component PlayerDP inherits Rectangle {
 
 component PlayersDisplay inherits Rectangle {
     in property <[PlayerSlint]> players;
-    in property <string> self-name;
+    in property <int> has_turn_id;
 
     VerticalLayout {
         spacing: 10px;
         alignment: start;
 
-        PlayerDP {
-            transform-scale: 115%;
-            transform-origin: { x: 10px, y: 0 };
-            name: root.self-name;
-            preferred-height: root.width * 35%;
-        }
-
         for player[i] in players: PlayerDP {
             name: player.name;
             preferred-height: root.width * 30%;
+            highlighted: player.id == has_turn_id ? true : false;
         }
     }
 }

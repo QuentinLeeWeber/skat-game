@@ -134,8 +134,8 @@ impl Game {
         let mut solo = None;
         for i in [0, 2, 1] {
             loop {
-                self.player_by_id(i)
-                    .send_message(S2CMessage::YourTurn)
+                let has_turn = self.player_by_id(i).id();
+                self.broadcast_message(S2CMessage::PlayerTurn(has_turn))
                     .await;
 
                 let val = self.player_by_id(i).expect_message_bid().await;
@@ -185,9 +185,10 @@ impl Game {
         }
 
         for _ in 0..2 {
-            self.player_by_id(solo)
-                .send_message(S2CMessage::YourTurn)
+            let has_turn = self.player_by_id(solo).id();
+            self.broadcast_message(S2CMessage::PlayerTurn(has_turn))
                 .await;
+
             let card = self.player_by_id(solo).expect_message_play_card().await;
             solo_trick.push(card);
         }
@@ -208,8 +209,8 @@ impl Game {
             let mut current_trick = vec![];
 
             for current_player in turn_order(last_winner) {
-                self.player_by_id(current_player as i32)
-                    .send_message(S2CMessage::YourTurn)
+                let has_turn = self.player_by_id(current_player as i32).id();
+                self.broadcast_message(S2CMessage::PlayerTurn(has_turn))
                     .await;
 
                 let card = self
