@@ -1,35 +1,33 @@
 use crate::game::GameHandle;
 use crate::knows_skat::KnowsSkatRules;
 use prelude::*;
-use std::{fmt::Debug, mem, vec};
+use std::{
+    fmt::Debug,
+    mem,
+    ops::{Deref, DerefMut},
+};
 
 #[derive(Default, Debug)]
-pub struct PendingGame {
-    player_1: Option<Box<dyn KnowsSkatRules>>,
-    player_2: Option<Box<dyn KnowsSkatRules>>,
-    player_3: Option<Box<dyn KnowsSkatRules>>,
-    player_count: u32,
+pub struct PendingGame(Vec<Box<dyn KnowsSkatRules>>);
+impl Deref for PendingGame {
+    type Target = Vec<Box<dyn KnowsSkatRules>>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for PendingGame {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }
 
 impl PendingGame {
     pub async fn add_player(&mut self, player: Box<dyn KnowsSkatRules>) -> Option<GameHandle> {
         println!("player: {} joined Pending Game", player.name());
-        match self.player_count {
-            0 => {
-                self.player_1 = Some(player);
-            }
-            1 => {
-                self.player_2 = Some(player);
-            }
-            _ => {
-                self.player_3 = Some(player);
-            }
-        }
-        self.player_count += 1;
+        self.0.push(player);
 
-        let msgs = vec![&self.player_1, &self.player_2, &self.player_3]
-            .into_iter()
-            .flatten()
+        let msgs = self
+            .iter()
             .map(|player| {
                 S2CMessage::PlayerJoin(PlayerJoinMessage {
                     id: player.id(),
@@ -43,7 +41,7 @@ impl PendingGame {
         }
         println!("pending game is now:\n{:#?}", self);
 
-        if self.player_count == 3 {
+        if self.len() == 3 {
             println!("pending game full: starting new game!");
             self.broadcast_message(S2CMessage::StartGame).await;
             Some(self.to_game())
@@ -53,54 +51,27 @@ impl PendingGame {
     }
 
     pub async fn try_remove_player(&mut self, id: u32) {
-        let mut removed = false;
-        if let Some(player) = &self.player_1
-            && player.id() == id
-        {
-            self.player_1 = mem::take(&mut self.player_2);
-            self.player_2 = mem::take(&mut self.player_3);
-            self.player_3 = None;
-            removed = true;
-        }
-        if let Some(player) = &self.player_2
-            && player.id() == id
-        {
-            self.player_2 = mem::take(&mut self.player_3);
-            self.player_3 = None;
-            removed = true;
-        }
-        if let Some(player) = &self.player_3
-            && player.id() == id
-        {
-            self.player_3 = None;
-            removed = true;
-        }
-        self.broadcast_message(S2CMessage::PlayerLeave(id)).await;
-        if removed {
-            self.player_count -= 1;
+        let player_count_before = self.len();
+        self.retain(|p| p.id() != id);
+        if player_count_before != self.len() {
+            self.broadcast_message(S2CMessage::PlayerLeave(id)).await;
             println!("removed player with id: {} from pending game", id);
             println!("pending game is now:\n{:#?}", self);
         }
     }
 
     pub fn to_game(&mut self) -> GameHandle {
-        self.player_count = 0;
+        let mut players = mem::take(&mut self.0);
         GameHandle::new(
-            mem::take(&mut self.player_1).unwrap(),
-            mem::take(&mut self.player_2).unwrap(),
-            mem::take(&mut self.player_3).unwrap(),
+            players.pop().unwrap(),
+            players.pop().unwrap(),
+            players.pop().unwrap(),
         )
     }
 
     async fn broadcast_message(&mut self, msg: S2CMessage) {
-        if let Some(p) = &mut self.player_1 {
-            p.send_message(msg.clone()).await;
-        }
-        if let Some(p) = &mut self.player_2 {
-            p.send_message(msg.clone()).await;
-        }
-        if let Some(p) = &mut self.player_3 {
-            p.send_message(msg.clone()).await;
+        for player in &mut self.0 {
+            player.send_message(msg.clone()).await;
         }
     }
 }

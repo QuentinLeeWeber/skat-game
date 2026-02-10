@@ -116,7 +116,6 @@ impl Lobby {
 
     async fn try_remove_player_from_game(&mut self, id: u32) {
         let remove_game = self.games.iter().position(|g| g.has_player_by_id(id));
-        dbg!("glauben sie das ich erückt bin");
 
         if let Some(remove_game) = remove_game {
             println!("removed Game with player: {}", id);
