@@ -183,6 +183,7 @@ pub async fn main() -> Result<(), slint::PlatformError> {
                 ui.set_app_state(AppState::Lobby);
                 ui.set_game_trump(CardSuitSlint::None);
                 ui.set_game_value("0".into());
+                ui.set_has_turn_id(0);
                 hand_model.clear();
                 players_model.clear();
                 players_model.push(
